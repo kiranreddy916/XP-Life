@@ -1,0 +1,189 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  const redirectUser = useCallback(async (session) => {
+    if (!session?.user) return;
+
+    try {
+      const userId = session.user.id;
+      const name = session.user.user_metadata?.full_name || session.user.email;
+
+      // Check if this user already has a profile row
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, username, gender, avatar_config')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Supabase profile check error:", error);
+        // If JWT or session is invalid, clear it
+        await supabase.auth.signOut();
+        localStorage.removeItem('user');
+        setLoading(false);
+        return;
+      }
+
+      if (profile) {
+        // Existing user — store locally and go home
+        localStorage.setItem('user', JSON.stringify({
+          name,
+          username: profile.username ? `@${profile.username}` : `@${session.user.email.split('@')[0]}`,
+          id: userId,
+          gender: profile.gender,
+          avatar_config: profile.avatar_config
+        }));
+        navigate('/home', { state: { isLogin: true, isNew: false, name }, replace: true });
+      } else {
+        // New user — send to onboarding with their Google name
+        navigate('/onboarding', {
+          state: { userId, name },
+          replace: true
+        });
+      }
+    } catch (err) {
+      console.error("Redirect error:", err);
+      await supabase.auth.signOut();
+      localStorage.removeItem('user');
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Listen for auth state changes FIRST (catches the OAuth redirect)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return;
+        if (event === 'SIGNED_IN' && session?.user) {
+          await redirectUser(session);
+        }
+      }
+    );
+
+    // 2. Then check for existing session (returning user who is already logged in)
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        if (!isMounted) return;
+        if (session?.user) {
+          await redirectUser(session);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        await supabase.auth.signOut();
+        if (isMounted) setLoading(false);
+      }
+    };
+    checkSession();
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [redirectUser]);
+
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="container center-content" style={{ minHeight: '100vh' }}>
+        <div style={{ color: 'var(--accent-cyan)', fontSize: '16px' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="container center-content"
+      style={{
+        minHeight: '100vh',
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(102,252,241,0.08) 0%, #0b0c10 70%)'
+      }}
+    >
+      <div
+        className="glass-panel"
+        style={{
+          textAlign: 'center',
+          width: '100%',
+          maxWidth: '360px',
+          padding: '48px 32px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
+        <div style={{ fontSize: '48px', marginBottom: '4px' }}>⚡</div>
+        <h1
+          style={{
+            fontSize: '38px',
+            fontWeight: '800',
+            letterSpacing: '-1px',
+            background: 'linear-gradient(135deg, #66fcf1, #c5c6c7)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '8px'
+          }}
+        >
+          FitQuest
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '40px' }}>
+          Your fitness journey starts here.
+        </p>
+
+        <button
+          onClick={handleGoogleLogin}
+          style={{
+            width: '100%',
+            background: 'white',
+            color: '#111',
+            border: 'none',
+            borderRadius: '50px',
+            padding: '14px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)';
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  );
+}
