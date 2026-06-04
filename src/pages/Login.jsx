@@ -2,6 +2,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
+const withTimeout = (promise, timeoutMs = 4500) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs))
+  ]);
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -16,16 +23,18 @@ export default function Login() {
       const userId = session.user.id;
       const name = session.user.user_metadata?.full_name || session.user.email;
 
-      // Check if this user already has a profile row
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, username, gender, avatar_config')
-        .eq('id', userId)
-        .maybeSingle();
+      // Check if this user already has a profile row with a timeout
+      const { data: profile, error } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('id, username, gender, avatar_config')
+          .eq('id', userId)
+          .maybeSingle(),
+        4500
+      );
       
       if (error) {
         console.error("Supabase profile check error:", error);
-        // If JWT or session is invalid, clear it
         await supabase.auth.signOut();
         localStorage.removeItem('user');
         redirectingRef.current = false;
@@ -51,9 +60,15 @@ export default function Login() {
         });
       }
     } catch (err) {
-      console.error("Redirect error:", err);
-      await supabase.auth.signOut();
-      localStorage.removeItem('user');
+      console.error("Redirect error or timeout:", err);
+      if (err.message !== 'Timeout') {
+        try {
+          await supabase.auth.signOut();
+          localStorage.removeItem('user');
+        } catch (e) {
+          console.error(e);
+        }
+      }
       redirectingRef.current = false;
       setLoading(false);
     }
@@ -75,7 +90,7 @@ export default function Login() {
     // 2. Then check for existing session (returning user who is already logged in)
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await withTimeout(supabase.auth.getSession(), 4500);
         if (error) throw error;
 
         if (!isMounted) return;
@@ -85,8 +100,15 @@ export default function Login() {
           setLoading(false);
         }
       } catch (err) {
-        console.error("Session check error:", err);
-        await supabase.auth.signOut();
+        console.error("Session check error or timeout:", err);
+        if (err.message !== 'Timeout') {
+          try {
+            await supabase.auth.signOut();
+            localStorage.removeItem('user');
+          } catch (e) {
+            console.error(e);
+          }
+        }
         if (isMounted) setLoading(false);
       }
     };
