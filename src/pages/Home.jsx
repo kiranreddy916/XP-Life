@@ -229,30 +229,44 @@ export default function Home() {
         return;
       }
 
-      // Fetch fresh data from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Fetch Profile
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        
-        if (data) {
-          setProfile(data);
-          // Sync local storage
-          localStorage.setItem('user', JSON.stringify({
-            ...JSON.parse(localStorage.getItem('user') || '{}'),
-            username: data.username,
-            gender: data.gender,
-            avatar_config: data.avatar_config,
-            streak: data.current_streak
-          }));
-        }
+      const withTimeout = (promise, timeoutMs = 4500) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs))
+        ]);
+      };
 
-        // Fetch Weekly Tracker Data
-        await fetchWeeklyStatus(session.user.id);
+      // Fetch fresh data from Supabase
+      try {
+        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 4500);
+        if (session?.user) {
+          // Fetch Profile
+          const { data, error } = await withTimeout(
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle(),
+            4500
+          );
+          
+          if (data && !error) {
+            setProfile(data);
+            // Sync local storage
+            localStorage.setItem('user', JSON.stringify({
+              ...JSON.parse(localStorage.getItem('user') || '{}'),
+              username: data.username,
+              gender: data.gender,
+              avatar_config: data.avatar_config,
+              streak: data.current_streak
+            }));
+          }
+
+          // Fetch Weekly Tracker Data
+          await withTimeout(fetchWeeklyStatus(session.user.id), 4500);
+        }
+      } catch (err) {
+        console.error("Home initialization Supabase error or timeout:", err);
       }
 
       if (location.state?.isLogin) {
