@@ -21,10 +21,8 @@
   padding: 0;
 }
 
-html, body {
-  overflow-x: hidden;
+html {
   width: 100%;
-  overscroll-behavior-y: none;
 }
 
 body {
@@ -36,12 +34,15 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 
 #root {
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
 }
