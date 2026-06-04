@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const redirectingRef = useRef(false);
 
   const redirectUser = useCallback(async (session) => {
     if (!session?.user) return;
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
 
     try {
       const userId = session.user.id;
@@ -25,6 +28,7 @@ export default function Login() {
         // If JWT or session is invalid, clear it
         await supabase.auth.signOut();
         localStorage.removeItem('user');
+        redirectingRef.current = false;
         setLoading(false);
         return;
       }
@@ -50,6 +54,7 @@ export default function Login() {
       console.error("Redirect error:", err);
       await supabase.auth.signOut();
       localStorage.removeItem('user');
+      redirectingRef.current = false;
       setLoading(false);
     }
   }, [navigate]);
