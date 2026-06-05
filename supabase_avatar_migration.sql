@@ -74,7 +74,12 @@ CREATE POLICY "Authenticated User Delete"
   );
 
 
--- 4. Recreate get_friends RPC to return profile_image_url
+-- 4. Drop existing functions to allow altering their return table structures
+DROP FUNCTION IF EXISTS get_friends();
+DROP FUNCTION IF EXISTS get_pending_requests();
+DROP FUNCTION IF EXISTS get_leaderboard();
+
+-- 5. Recreate get_friends RPC to return profile_image_url
 CREATE OR REPLACE FUNCTION get_friends()
 RETURNS TABLE (
   friendship_id UUID,
@@ -116,7 +121,7 @@ END;
 $$;
 
 
--- 5. Recreate get_pending_requests RPC to return profile_image_url
+-- 6. Recreate get_pending_requests RPC to return profile_image_url
 CREATE OR REPLACE FUNCTION get_pending_requests()
 RETURNS TABLE (
   friendship_id UUID,
@@ -151,7 +156,7 @@ END;
 $$;
 
 
--- 6. Recreate get_leaderboard RPC to return profile_image_url and avatar_url
+-- 7. Recreate get_leaderboard RPC to return profile_image_url and avatar_url
 CREATE OR REPLACE FUNCTION get_leaderboard()
 RETURNS TABLE (
   profile_id UUID,
