@@ -13,6 +13,7 @@ export default function AvatarManager() {
   const [savedAvatarUrl, setSavedAvatarUrl] = useState(null);
   const [pendingAvatarUrl, setPendingAvatarUrl] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [selectedModelUrl, setSelectedModelUrl] = useState(null);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,9 +59,9 @@ export default function AvatarManager() {
     fetchUserAndProfile();
   }, [navigate]);
 
-  // 2. Setup message listener for Ready Player Me iframe events
+  // 2. Setup message listener for Ready Player Me iframe events (only for RPM provider)
   useEffect(() => {
-    if (!showEditor) return;
+    if (!showEditor || provider.getId() !== 'readyplayerme') return;
 
     const handleIframeMessage = (event) => {
       const avatarData = provider.parseEditorMessage(event);
@@ -111,6 +112,9 @@ export default function AvatarManager() {
   };
 
   const handleEditClick = () => {
+    const models = provider.getId() === 'default' ? provider.getModels() : [];
+    const initialUrl = activeAvatarToShow || (models.length > 0 ? models[0].url : null);
+    setSelectedModelUrl(initialUrl);
     setShowEditor(true);
   };
 
@@ -298,7 +302,7 @@ export default function AvatarManager() {
 
       </div>
 
-      {/* Full-Screen Ready Player Me Iframe Creator Modal */}
+      {/* Full-Screen Native Character Selector Modal */}
       {showEditor && (
         <div 
           style={{
@@ -310,7 +314,7 @@ export default function AvatarManager() {
             flexDirection: 'column'
           }}
         >
-          {/* Header toolbar for RPM frame */}
+          {/* Header toolbar */}
           <div 
             style={{ 
               height: '60px', 
@@ -319,12 +323,13 @@ export default function AvatarManager() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '0 20px'
+              padding: '0 20px',
+              flexShrink: 0
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px' }}>⚡</span>
-              <span style={{ fontWeight: '700', color: 'white' }}>FitQuest Avatar Creator</span>
+              <span style={{ fontWeight: '700', color: 'white' }}>FitQuest Avatar Selector</span>
             </div>
             <button 
               onClick={() => setShowEditor(false)}
@@ -343,19 +348,120 @@ export default function AvatarManager() {
             </button>
           </div>
 
-          {/* Iframe Viewport */}
-          <iframe 
-            ref={iframeRef}
-            src={provider.getEditorUrl({ avatarId: savedAvatarUrl ? savedAvatarUrl.split('/').pop()?.replace('.glb', '') : null })} 
+          {/* Interactive Preview & Selection Grid */}
+          <div 
             style={{ 
               flex: 1, 
-              border: 'none', 
-              width: '100%', 
-              height: '100%' 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden' 
             }}
-            allow="camera; microphone; clipboard-write"
-            title="Ready Player Me Avatar Customizer"
-          />
+          >
+            {/* 3D Preview Area */}
+            <div 
+              style={{
+                height: '260px',
+                width: '100%',
+                background: 'radial-gradient(circle, rgba(102,252,241,0.05) 0%, rgba(11,12,16,0.5) 100%)',
+                position: 'relative',
+                borderBottom: '1px solid var(--glass-border)',
+                flexShrink: 0
+              }}
+            >
+              {selectedModelUrl ? (
+                <AvatarViewer avatarUrl={selectedModelUrl} height="100%" />
+              ) : (
+                <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+                  No Model Selected
+                </div>
+              )}
+            </div>
+
+            {/* List / Grid of Available Chassis */}
+            <div 
+              style={{ 
+                flex: 1, 
+                overflowY: 'auto', 
+                padding: '20px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '16px' 
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 4px 0', color: 'white' }}>Choose Your Chassis</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>Select an optimized high-performance 3D body representation.</p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {(provider.getId() === 'default' ? provider.getModels() : []).map((model) => {
+                  const isSelected = selectedModelUrl === model.url;
+                  return (
+                    <div
+                      key={model.id}
+                      onClick={() => setSelectedModelUrl(model.url)}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: '16px',
+                        background: isSelected ? 'rgba(102, 252, 241, 0.06)' : 'rgba(255, 255, 255, 0.02)',
+                        border: isSelected ? '2.5px solid var(--accent-cyan)' : '1px solid var(--glass-border)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isSelected ? '0 0 12px rgba(102, 252, 241, 0.12)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '800', color: isSelected ? 'var(--accent-cyan)' : 'white', fontSize: '14px' }}>
+                          {model.name}
+                        </span>
+                        {isSelected && (
+                          <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0b0c10' }}>
+                            <Check size={11} strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                        {model.description}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Confirm Action Button */}
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  if (selectedModelUrl) {
+                    setPendingAvatarUrl(selectedModelUrl);
+                    setShowEditor(false);
+                    setToast({
+                      title: "Chassis Selected! ✨",
+                      message: "Rotate the avatar below and click 'Save Changes' to apply it."
+                    });
+                  }
+                }}
+                style={{
+                  marginTop: '10px',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  borderRadius: '50px'
+                }}
+              >
+                <Check size={18} />
+                Select Character
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

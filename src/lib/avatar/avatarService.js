@@ -1,4 +1,5 @@
 import { ReadyPlayerMeProvider } from './ReadyPlayerMeProvider';
+import { DefaultAvatarProvider } from './DefaultAvatarProvider';
 import { supabase } from '../supabaseClient';
 
 class AvatarService {
@@ -7,9 +8,10 @@ class AvatarService {
     
     // Register default providers
     this.registerProvider(new ReadyPlayerMeProvider());
+    this.registerProvider(new DefaultAvatarProvider());
     
     // Set default active provider ID
-    this.activeProviderId = 'readyplayerme';
+    this.activeProviderId = 'default';
   }
 
   /**
