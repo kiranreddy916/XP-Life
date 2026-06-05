@@ -4,7 +4,7 @@ export class ReadyPlayerMeProvider extends AvatarProvider {
   constructor() {
     super();
     // Default config values
-    this.subdomain = 'fitquest'; // We can customize or let user set in environment variables
+    this.subdomain = 'demo'; // Open public developer subdomain for iframe integrations
   }
 
   getId() {
