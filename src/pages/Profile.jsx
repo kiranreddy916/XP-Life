@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check } from 'lucide-react';
+import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video } from 'lucide-react';
 import Avatar from '../components/Avatar';
-import AvatarEditor from '../components/AvatarEditor';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Profile() {
@@ -21,9 +20,109 @@ export default function Profile() {
     gender: '',
     height: '',
     weight: '',
-    avatar_config: {}
+    avatar_config: {},
+    profile_image_url: null
   });
   const [saving, setSaving] = useState(false);
+
+  // In-app Camera state
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Handle file upload to Supabase Storage
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    try {
+      setSaving(true);
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `${profile.id}/profile_${Date.now()}.${fileExt}`;
+
+      // Upload file to the bucket
+      const { data, error: uploadErr } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadErr) throw uploadErr;
+
+      // Retrieve public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+
+      setEditForm(prev => ({ ...prev, profile_image_url: publicUrl }));
+    } catch (err) {
+      console.error("Error uploading profile picture:", err);
+      alert("Failed to upload image: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } }
+      });
+      setCameraStream(stream);
+      // Wait briefly for elements to mount and reference is updated
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 150);
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      setCameraError("Camera access denied. Please allow camera permissions in your settings.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !cameraStream) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 640;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Mirror horizontally for selfie style
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `camera_${Date.now()}.png`, { type: 'image/png' });
+        handleFileUpload(file);
+        stopCamera();
+        setShowCameraModal(false);
+      }
+    }, 'image/png');
+  };
+
+  // Close camera if modal is closed
+  useEffect(() => {
+    if (!showCameraModal) {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [showCameraModal]);
 
   useEffect(() => {
     let isMounted = true;
@@ -120,7 +219,8 @@ export default function Profile() {
       gender: profile.gender || '',
       height: profile.height || '',
       weight: profile.weight || '',
-      avatar_config: profile.avatar_config || {}
+      avatar_config: profile.avatar_config || {},
+      profile_image_url: profile.profile_image_url || null
     });
     setShowSettings(false);
     setIsEditing(true);
@@ -135,7 +235,8 @@ export default function Profile() {
         gender: editForm.gender,
         height: editForm.height ? Number(editForm.height) : null,
         weight: editForm.weight ? Number(editForm.weight) : null,
-        avatar_config: editForm.avatar_config
+        avatar_config: editForm.avatar_config,
+        profile_image_url: editForm.profile_image_url
       })
       .eq('id', profile.id);
 
@@ -149,7 +250,8 @@ export default function Profile() {
         ...localUser,
         username: `@${editForm.username}`,
         gender: editForm.gender,
-        avatar_config: editForm.avatar_config
+        avatar_config: editForm.avatar_config,
+        profile_image_url: editForm.profile_image_url
       }));
 
       setIsEditing(false);
@@ -206,12 +308,158 @@ export default function Profile() {
             </button>
           </div>
 
-          <div style={{ marginBottom: '10px' }}>
-            <AvatarEditor 
-              config={editForm.avatar_config} 
-              onChange={(newConfig) => setEditForm({ ...editForm, avatar_config: newConfig })} 
+          {/* Profile Picture Uploader controls */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', background: 'var(--panel-bg)', borderRadius: '24px', padding: '24px', border: '1px solid var(--glass-border)', marginBottom: '16px' }}>
+            <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent-cyan)' }}>
+              {editForm.profile_image_url ? (
+                <img 
+                  src={editForm.profile_image_url} 
+                  alt="Preview" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <Avatar gender={editForm.gender || 'male'} config={editForm.avatar_config} size={120} />
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button 
+                type="button"
+                className="btn-secondary" 
+                onClick={() => {
+                  setShowCameraModal(true);
+                  startCamera();
+                }}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px', padding: '10px' }}
+              >
+                <Camera size={16} />
+                Camera
+              </button>
+              <button 
+                type="button"
+                className="btn-primary" 
+                onClick={() => fileInputRef.current?.click()}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px', padding: '10px' }}
+              >
+                <Image size={16} />
+                Gallery
+              </button>
+            </div>
+
+            {/* Hidden native input for Gallery Upload */}
+            <input 
+              ref={fileInputRef}
+              type="file" 
+              accept="image/*" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleFileUpload(e.target.files[0]);
+                }
+              }}
+              style={{ display: 'none' }}
             />
           </div>
+
+          {/* Camera Viewfinder Overlay Modal */}
+          {showCameraModal && (
+            <div 
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 10000,
+                background: 'rgba(11, 12, 16, 0.95)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '24px'
+              }}
+            >
+              <div 
+                style={{
+                  width: '100%',
+                  maxWidth: '380px',
+                  background: 'var(--panel-bg)',
+                  borderRadius: '24px',
+                  border: '1px solid var(--glass-border)',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '20px'
+                }}
+              >
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Camera Viewfinder</h3>
+                  <button 
+                    onClick={() => {
+                      stopCamera();
+                      setShowCameraModal(false);
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {cameraError ? (
+                  <div style={{ color: '#ff4b4b', textAlign: 'center', fontSize: '14px', padding: '20px 0' }}>
+                    {cameraError}
+                  </div>
+                ) : (
+                  <div 
+                    style={{ 
+                      width: '100%', 
+                      aspectRatio: '1', 
+                      borderRadius: '16px', 
+                      overflow: 'hidden', 
+                      background: 'black', 
+                      position: 'relative',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}
+                  >
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        transform: 'scaleX(-1)' // selfie mirroring
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                  <button 
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      stopCamera();
+                      setShowCameraModal(false);
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    Close
+                  </button>
+                  {!cameraError && (
+                    <button 
+                      type="button"
+                      className="btn-primary"
+                      onClick={capturePhoto}
+                      style={{ flex: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    >
+                      <Video size={18} />
+                      Capture Photo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label>Username</label>
@@ -314,7 +562,30 @@ export default function Profile() {
           <Settings size={24} />
         </button>
         <h2 className="profile-username">{profile.username}</h2>
-        <Avatar gender={profile.gender || 'male'} config={profile.avatar_config} />
+        
+        {/* Render uploaded profile photo if exists, else NiceAvatar */}
+        {profile.profile_image_url ? (
+          <div 
+            style={{ 
+              width: '120px', 
+              height: '120px', 
+              borderRadius: '50%', 
+              overflow: 'hidden', 
+              border: '2px solid var(--accent-cyan)',
+              boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
+              margin: '0 auto 16px auto'
+            }}
+          >
+            <img 
+              src={profile.profile_image_url} 
+              alt={profile.username} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        ) : (
+          <Avatar gender={profile.gender || 'male'} config={profile.avatar_config} />
+        )}
+
         <div className="profile-joined">@ {profile.username.replace('@', '')} • Joined {joinedDate}</div>
         
         {/* Unique Friend Code display */}
@@ -367,11 +638,28 @@ export default function Profile() {
           <h3>Friend Streaks</h3>
         </div>
         <div className="horizontal-list">
-          {/* Display real friends streaks */}
+          {/* Display real friends streaks with custom images */}
           {friendsList.map(friend => (
             <div key={friend.friend_profile_id} className="friend-item">
-              <div className="friend-circle" style={{ position: 'relative' }}>
-                <Avatar gender={friend.gender || 'male'} config={friend.avatar_config} />
+              <div 
+                className="friend-circle" 
+                style={{ 
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}
+              >
+                {friend.profile_image_url ? (
+                  <img 
+                    src={friend.profile_image_url} 
+                    alt={friend.username} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Avatar gender={friend.gender || 'male'} config={friend.avatar_config} />
+                )}
               </div>
               <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
                 <Flame size={12} className="streak-fire-icon" />
