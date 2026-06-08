@@ -397,7 +397,7 @@ export default function Home() {
 
       <div className="avatar-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {profile?.avatar_url ? (
-          <div style={{ width: '220px', height: '320px', position: 'relative', overflow: 'hidden', margin: '0 auto' }}>
+          <div style={{ width: '220px', height: '250px', position: 'relative', overflow: 'hidden', margin: '0 auto' }}>
             <AvatarViewer avatarUrl={profile.avatar_url} height="100%" />
           </div>
         ) : (
