@@ -28,6 +28,8 @@ export default function Leaderboard() {
       return (b.weekly_xp || 0) - (a.weekly_xp || 0);
     } else if (timeframe === 'monthly') {
       return (b.monthly_xp || 0) - (a.monthly_xp || 0);
+    } else if (timeframe === 'yearly') {
+      return (b.yearly_xp || 0) - (a.yearly_xp || 0);
     } else {
       return (b.total_xp || 0) - (a.total_xp || 0);
     }
@@ -37,6 +39,7 @@ export default function Leaderboard() {
   const getXPValue = (row) => {
     if (timeframe === 'weekly') return row.weekly_xp || 0;
     if (timeframe === 'monthly') return row.monthly_xp || 0;
+    if (timeframe === 'yearly') return row.yearly_xp || 0;
     return row.total_xp || 0;
   };
 
@@ -257,6 +260,12 @@ export default function Leaderboard() {
             onClick={() => setTimeframe('monthly')}
           >
             Monthly
+          </button>
+          <button 
+            className={`timeframe-tab-btn ${timeframe === 'yearly' ? 'active' : ''}`}
+            onClick={() => setTimeframe('yearly')}
+          >
+            Yearly
           </button>
           <button 
             className={`timeframe-tab-btn ${timeframe === 'overall' ? 'active' : ''}`}
