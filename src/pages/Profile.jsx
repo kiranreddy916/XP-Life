@@ -658,7 +658,7 @@ export default function Profile() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <Avatar gender={friend.gender || 'male'} config={friend.avatar_config} />
+                  <Avatar gender={friend.gender || 'male'} config={friend.avatar_config} size={56} />
                 )}
               </div>
               <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>

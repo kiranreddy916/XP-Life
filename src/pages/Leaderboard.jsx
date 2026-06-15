@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Users, QrCode, Flame, Sparkles, UserPlus, Check, X, Bell } from 'lucide-react';
+import { Trophy, Users, QrCode, Flame, Sparkles, UserPlus, Check, X, Bell, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import Avatar from '../components/Avatar';
 import AddFriendsSheet from '../components/AddFriendsSheet';
 import QRCodeModal from '../components/QRCodeModal';
 
@@ -14,10 +13,32 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [timeframe, setTimeframe] = useState('overall'); // 'weekly' | 'monthly' | 'overall'
   
   // Sheet & Modal controls
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+
+  // Calculate if user has friends
+  const hasFriends = leaderboardData.length > 1;
+
+  // Sort leaderboard data dynamically based on the timeframe
+  const sortedLeaderboard = [...leaderboardData].sort((a, b) => {
+    if (timeframe === 'weekly') {
+      return (b.weekly_xp || 0) - (a.weekly_xp || 0);
+    } else if (timeframe === 'monthly') {
+      return (b.monthly_xp || 0) - (a.monthly_xp || 0);
+    } else {
+      return (b.total_xp || 0) - (a.total_xp || 0);
+    }
+  });
+
+  // Get current active XP value for rendering
+  const getXPValue = (row) => {
+    if (timeframe === 'weekly') return row.weekly_xp || 0;
+    if (timeframe === 'monthly') return row.monthly_xp || 0;
+    return row.total_xp || 0;
+  };
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -167,7 +188,42 @@ export default function Leaderboard() {
             {pendingRequests.map((req) => (
               <div key={req.friendship_id} className="pending-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Avatar gender={req.gender || 'male'} config={req.avatar_config} style={{ width: '36px', height: '36px' }} />
+                  {req.profile_image_url ? (
+                    <div 
+                      style={{ 
+                        width: '36px', 
+                        height: '36px', 
+                        borderRadius: '50%', 
+                        overflow: 'hidden', 
+                        border: '1.5px solid var(--accent-cyan)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'var(--panel-bg)'
+                      }}
+                    >
+                      <img 
+                        src={req.profile_image_url} 
+                        alt={req.username} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  ) : (
+                    <div 
+                      style={{ 
+                        width: '36px', 
+                        height: '36px', 
+                        borderRadius: '50%', 
+                        backgroundColor: 'rgba(255,255,255,0.05)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                      }}
+                    >
+                      <User size={18} color="var(--text-secondary)" />
+                    </div>
+                  )}
                   <div className="pending-info">
                     <span className="pending-username">@{req.username.replace('@', '')}</span>
                     <span className="pending-subtitle">Lvl {req.level} • {req.total_xp} XP</span>
@@ -187,6 +243,30 @@ export default function Leaderboard() {
         </div>
       )}
 
+      {/* Timeframe Selector Tabs (Only if user has friends) */}
+      {hasFriends && (
+        <div className="leaderboard-timeframe-tabs">
+          <button 
+            className={`timeframe-tab-btn ${timeframe === 'weekly' ? 'active' : ''}`}
+            onClick={() => setTimeframe('weekly')}
+          >
+            Weekly
+          </button>
+          <button 
+            className={`timeframe-tab-btn ${timeframe === 'monthly' ? 'active' : ''}`}
+            onClick={() => setTimeframe('monthly')}
+          >
+            Monthly
+          </button>
+          <button 
+            className={`timeframe-tab-btn ${timeframe === 'overall' ? 'active' : ''}`}
+            onClick={() => setTimeframe('overall')}
+          >
+            Overall
+          </button>
+        </div>
+      )}
+
       {/* 2. RANKINGS TABLE LIST */}
       <div className="rankings-container">
         {leaderboardData.length === 0 ? (
@@ -197,7 +277,7 @@ export default function Leaderboard() {
           </div>
         ) : (
           <div className="rankings-list">
-            {leaderboardData.map((row, index) => {
+            {(hasFriends ? sortedLeaderboard : leaderboardData).map((row, index) => {
               const rank = index + 1;
               let rankBadge = null;
               let rowClass = 'ranking-row';
@@ -219,6 +299,8 @@ export default function Leaderboard() {
                 rankBadge = <span className="rank-number">{rank}</span>;
               }
 
+              const displayXp = hasFriends ? getXPValue(row) : row.total_xp;
+
               return (
                 <div key={row.profile_id} className={rowClass}>
                   {/* Left Column: Rank Medallion */}
@@ -228,7 +310,42 @@ export default function Leaderboard() {
 
                   {/* Center Column: Avatar + Profile */}
                   <div className="ranking-profile-col">
-                    <Avatar gender={row.gender || 'male'} config={row.avatar_config} />
+                    {row.profile_image_url ? (
+                      <div 
+                        style={{ 
+                          width: '36px', 
+                          height: '36px', 
+                          borderRadius: '50%', 
+                          overflow: 'hidden', 
+                          border: '1.5px solid var(--accent-cyan)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'var(--panel-bg)'
+                        }}
+                      >
+                        <img 
+                          src={row.profile_image_url} 
+                          alt={row.username} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        style={{ 
+                          width: '36px', 
+                          height: '36px', 
+                          borderRadius: '50%', 
+                          backgroundColor: 'rgba(255,255,255,0.05)', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        <User size={18} color="var(--text-secondary)" />
+                      </div>
+                    )}
                     <div className="ranking-user-details">
                       <span className="ranking-username">
                         @{row.username.replace('@', '')}
@@ -238,17 +355,10 @@ export default function Leaderboard() {
                     </div>
                   </div>
 
-                  {/* Right Columns: Streak & total XP */}
+                  {/* Right Columns: total XP */}
                   <div className="ranking-metrics-col">
-                    {row.current_streak > 0 && (
-                      <div className="ranking-streak-badge" title={`${row.current_streak} Day Streak`}>
-                        <Flame size={14} className="streak-fire-icon" />
-                        <span>{row.current_streak}</span>
-                      </div>
-                    )}
                     <div className="ranking-xp-value">
-                      <span>{row.total_xp.toLocaleString()}</span>
-                      <span className="xp-label">XP</span>
+                      <span>{displayXp.toLocaleString()} XP</span>
                     </div>
                   </div>
                 </div>

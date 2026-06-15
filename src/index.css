@@ -2573,8 +2573,8 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: space-between;
   background: var(--panel-bg);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 12px 16px;
-  border-radius: 16px;
+  padding: 8px 12px;
+  border-radius: 12px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2614,19 +2614,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ranking-rank-col {
-  width: 32px;
+  width: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .rank-medal {
-  font-size: 22px;
+  font-size: 18px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .rank-number {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--text-secondary);
 }
@@ -2646,7 +2646,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ranking-username {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
   display: flex;
@@ -2698,23 +2698,18 @@ h1, h2, h3, h4, h5, h6 {
 
 .ranking-xp-value {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 60px;
+  align-items: center;
 }
 
 .ranking-xp-value span:first-child {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--accent-cyan);
   text-shadow: 0 0 6px rgba(102, 252, 241, 0.3);
 }
 
 .xp-label {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  letter-spacing: 0.5px;
+  display: none;
 }
 
 /* ==========================================
@@ -3321,4 +3316,41 @@ h1, h2, h3, h4, h5, h6 {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-top: 2px;
+}
+
+/* Leaderboard Timeframe Selector */
+.leaderboard-timeframe-tabs {
+  display: flex;
+  background: rgba(31, 40, 51, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 4px;
+  margin: 0 20px 20px 20px;
+  gap: 4px;
+}
+
+.timeframe-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.timeframe-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timeframe-tab-btn.active {
+  background: rgba(102, 252, 241, 0.1);
+  color: var(--accent-cyan);
+  box-shadow: inset 0 0 8px rgba(102, 252, 241, 0.05);
+  border: 1px solid rgba(102, 252, 241, 0.2);
 }
