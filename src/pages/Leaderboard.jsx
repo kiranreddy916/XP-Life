@@ -278,7 +278,7 @@ export default function Leaderboard() {
 
       {/* 2. RANKINGS TABLE LIST */}
       <div className="rankings-container">
-        {leaderboardData.length === 0 ? (
+        {!hasFriends ? (
           <div className="empty-leaderboard-card">
             <Users size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
             <h4>No Rankings Available</h4>
