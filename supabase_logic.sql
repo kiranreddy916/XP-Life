@@ -308,6 +308,7 @@ DECLARE
   v_last_activity_date DATE;
   v_streak INT;
   v_rests_this_week INT;
+  v_week_start DATE;
 BEGIN
   IF EXISTS (SELECT 1 FROM activity_logs WHERE user_id = v_user_id AND activity_date = p_client_date AND activity_type = 'workout') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Cannot take rest day after finishing a workout today');
@@ -319,27 +320,33 @@ BEGIN
 
   SELECT * INTO v_profile FROM profiles WHERE id = v_user_id;
   
-  -- Max 2 rest days per week logic
+  -- Monday of current week using ISO day of week (Monday = 1)
+  v_week_start := p_client_date - (EXTRACT(ISODOW FROM p_client_date)::INT - 1);
+
+  -- Count rest days used this Mon–Sun week
   SELECT COUNT(*) INTO v_rests_this_week 
   FROM activity_logs 
   WHERE user_id = v_user_id 
     AND activity_type = 'rest' 
-    AND date_trunc('week', activity_date::timestamp) = date_trunc('week', p_client_date::timestamp);
+    AND activity_date >= v_week_start
+    AND activity_date < v_week_start + 7;
     
-  SELECT activity_date INTO v_last_activity_date 
-  FROM activity_logs 
-  WHERE user_id = v_user_id AND activity_type IN ('workout', 'rest')
-  ORDER BY activity_date DESC LIMIT 1;
-
   IF v_rests_this_week >= 2 THEN
-    -- Break streak (Starts from 1 because they actively recorded it)
-    v_streak := 1;
+    -- Exceeded shield limit — streak breaks to 0
+    v_streak := 0;
   ELSE
-    -- Maintain streak
-    IF v_last_activity_date = p_client_date - 1 THEN
-      v_streak := COALESCE(v_profile.current_streak, 0) + 1;
+    -- Valid rest day — MAINTAIN current streak, do NOT increment
+    SELECT activity_date INTO v_last_activity_date 
+    FROM activity_logs 
+    WHERE user_id = v_user_id AND activity_type IN ('workout', 'rest')
+    ORDER BY activity_date DESC LIMIT 1;
+
+    IF v_last_activity_date = p_client_date - 1 OR v_last_activity_date = p_client_date THEN
+      -- Yesterday was active: maintain streak as-is
+      v_streak := COALESCE(v_profile.current_streak, 0);
     ELSE
-      v_streak := 1;
+      -- Gap detected — streak was already broken, reset to 0
+      v_streak := 0;
     END IF;
   END IF;
   
