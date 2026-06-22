@@ -42,6 +42,13 @@ html {
   overscroll-behavior: none;
 }
 
+img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 body {
   background-color: var(--bg-color);
   color: var(--text-primary);
@@ -790,8 +797,8 @@ h1, h2, h3, h4, h5, h6 {
 .cl-task-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
+  gap: 12px;
+  padding: 10px 16px;
   transition: background 0.2s ease;
   position: relative;
 }
@@ -806,9 +813,9 @@ h1, h2, h3, h4, h5, h6 {
 /* Checkbox */
 .cl-checkbox {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   border: 2px solid rgba(102, 252, 241, 0.4);
   background: transparent;
   display: flex;
@@ -833,10 +840,10 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 0;
 }
 .cl-task-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #ffffff;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   transition: all 0.2s;
 }
 .cl-task-done {
@@ -848,7 +855,7 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--accent-cyan);
   opacity: 0.85;
@@ -857,8 +864,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Menu button */
 .cl-menu-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: rgba(102, 252, 241, 0.05);
   border: 1px solid rgba(102, 252, 241, 0.08);
   border-radius: 8px;
