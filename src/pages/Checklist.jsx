@@ -45,6 +45,15 @@ export default function Checklist() {
     setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: oldProfile } = await supabase
+        .from('profiles')
+        .select('level')
+        .eq('id', session.user.id)
+        .single();
+
       const { data, error } = await supabase.rpc('toggle_task', {
         p_task_id: task.id,
         p_completed: !task.completed,
@@ -55,9 +64,18 @@ export default function Checklist() {
         console.error('Error toggling task:', error);
         fetchTasks(); // Revert on error
       } else if (data?.xp_awarded > 0) {
-        setToastInfo({
-          title: "All Tasks Completed! 🎉",
-          message: `You earned ${data.xp_awarded} XP! Keep it up! ⚡`
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .select('level')
+          .eq('id', session.user.id)
+          .single();
+
+        navigate('/home', {
+          state: {
+            checklistCompleted: true,
+            xpEarned: data.xp_awarded,
+            levelUp: (newProfile && oldProfile && newProfile.level > oldProfile.level) ? newProfile.level : false
+          }
         });
       }
     } catch (err) {

@@ -283,8 +283,8 @@ export default function Home() {
           });
         }
 
-        // Clear state so refresh doesn't show toast again
-        window.history.replaceState({}, document.title);
+        // Clear state using React Router so it doesn't show toast again
+        navigate(location.pathname, { replace: true, state: {} });
       } else if (location.state?.workoutFinished) {
         const { xpEarned, levelUp, prsHit, prXp } = location.state;
 
@@ -333,7 +333,24 @@ export default function Home() {
           }
         }
 
-        window.history.replaceState({}, document.title);
+        // Clear state using React Router so it doesn't show toast again
+        navigate(location.pathname, { replace: true, state: {} });
+      } else if (location.state?.checklistCompleted) {
+        const { xpEarned, levelUp } = location.state;
+        if (levelUp) {
+          setToastInfo({
+            title: `Level Up! 🎉`,
+            message: `You Gained ${xpEarned} XP and increased to Level ${levelUp}!`,
+          });
+        } else {
+          setToastInfo({
+            title: `System Tasks Complete! 🎉`,
+            message: `You Gained ${xpEarned} XP!`,
+          });
+        }
+
+        // Clear state using React Router so it doesn't show toast again
+        navigate(location.pathname, { replace: true, state: {} });
       }
     };
 
@@ -343,7 +360,7 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="container center-content animate-fade-in" style={{ position: 'relative', overflow: 'hidden' }}>
+    <div className="container center-content animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(75px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none' }}>
       {toastInfo && (
         <Toast
           title={toastInfo.title}

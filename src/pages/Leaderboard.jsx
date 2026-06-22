@@ -15,6 +15,9 @@ export default function Leaderboard() {
   const [showToast, setShowToast] = useState(false);
   const [timeframe, setTimeframe] = useState('weekly'); // 'weekly' | 'monthly' | 'overall'
   
+  const [sentRequests, setSentRequests] = useState([]);
+  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  
   // Sheet & Modal controls
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -22,15 +25,23 @@ export default function Leaderboard() {
   // Calculate if user has friends
   const hasFriends = leaderboardData.length > 1;
 
-  // Sort leaderboard data dynamically based on the timeframe
+  // Sort leaderboard data dynamically based on the timeframe (current user is prioritized on XP ties)
   const sortedLeaderboard = [...leaderboardData].sort((a, b) => {
+    let diff = 0;
     if (timeframe === 'weekly') {
-      return (b.weekly_xp || 0) - (a.weekly_xp || 0);
+      diff = (b.weekly_xp || 0) - (a.weekly_xp || 0);
     } else if (timeframe === 'monthly') {
-      return (b.monthly_xp || 0) - (a.monthly_xp || 0);
+      diff = (b.monthly_xp || 0) - (a.monthly_xp || 0);
     } else {
-      return (b.total_xp || 0) - (a.total_xp || 0);
+      diff = (b.total_xp || 0) - (a.total_xp || 0);
     }
+
+    if (diff !== 0) return diff;
+
+    // Tie-breaker: current user always comes first
+    if (a.is_user) return -1;
+    if (b.is_user) return 1;
+    return 0;
   });
 
   // Get current active XP value for rendering
@@ -66,12 +77,48 @@ export default function Leaderboard() {
       if (profileErr) throw profileErr;
       setUserProfile(profile);
 
-      // 2. Fetch pending requests
+      // 2. Fetch pending requests (received)
       const { data: pending, error: pendingErr } = await supabase
         .rpc('get_pending_requests');
         
       if (pendingErr) throw pendingErr;
       setPendingRequests(pending || []);
+
+      // Fetch pending requests (sent)
+      const { data: friendships } = await supabase
+        .from('friendships')
+        .select('id, friend_id, created_at')
+        .eq('user_id', uid)
+        .eq('status', 'pending');
+        
+      if (friendships && friendships.length > 0) {
+        const friendIds = friendships.map(f => f.friend_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, gender, level, total_xp, profile_image_url')
+          .in('id', friendIds);
+          
+        if (profiles) {
+          const merged = friendships.map(f => {
+            const p = profiles.find(profile => profile.id === f.friend_id);
+            return {
+              friendship_id: f.id,
+              receiver_profile_id: f.friend_id,
+              username: p?.username || '',
+              gender: p?.gender || '',
+              level: p?.level || 1,
+              total_xp: p?.total_xp || 0,
+              profile_image_url: p?.profile_image_url,
+              created_at: f.created_at
+            };
+          });
+          setSentRequests(merged);
+        } else {
+          setSentRequests([]);
+        }
+      } else {
+        setSentRequests([]);
+      }
 
       // 3. Fetch leaderboard
       const now = new Date();
@@ -152,7 +199,21 @@ export default function Leaderboard() {
       triggerToast('Failed to decline invite.');
     }
   };
-
+  const handleUnsendRequest = async (friendshipId) => {
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', friendshipId);
+        
+      if (error) throw error;
+      triggerToast('Friend request cancelled.');
+      fetchData();
+    } catch (err) {
+      console.error('Error unsending request:', err);
+      triggerToast('Failed to cancel request.');
+    }
+  };
   if (loading) {
     return (
       <div className="container center-content" style={{ minHeight: '100vh' }}>
@@ -161,8 +222,10 @@ export default function Leaderboard() {
     );
   }
 
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
+    <div className="animate-fade-in" style={{ paddingBottom: '160px' }}>
       
       {/* Dynamic Toast Message */}
       {showToast && (
@@ -175,14 +238,49 @@ export default function Leaderboard() {
       )}
 
       {/* Header Panel */}
-      <div className="leaderboard-header-section">
+      <div className="leaderboard-header-section" style={isAndroid ? { marginTop: '24px' } : {}}>
         <h2 className="leaderboard-title">
           <Trophy size={28} className="title-trophy-icon" />
           Rankings
         </h2>
         
         {/* Buttons Row */}
-        <div className="leaderboard-buttons-row">
+        <div className="leaderboard-buttons-row" style={{ gap: '8px' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setIsPendingModalOpen(true)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              fontSize: '13px', 
+              padding: '10px 14px', 
+              borderRadius: '12px', 
+              border: '1px solid rgba(102, 252, 241, 0.2)', 
+              background: 'rgba(102, 252, 241, 0.05)', 
+              color: 'var(--accent-cyan)',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            <Bell size={15} />
+            Pending
+            {(pendingRequests.length + sentRequests.length) > 0 && (
+              <span 
+                style={{ 
+                  background: 'var(--accent-red)', 
+                  color: '#fff', 
+                  fontSize: '10px', 
+                  fontWeight: '700',
+                  padding: '1px 6px', 
+                  borderRadius: '10px', 
+                  marginLeft: '2px' 
+                }}
+              >
+                {pendingRequests.length + sentRequests.length}
+              </span>
+            )}
+          </button>
           <button className="btn-primary add-friends-entry-btn" onClick={() => setIsAddSheetOpen(true)}>
             <span style={{ marginRight: '6px', fontSize: '16px' }}>👥</span> Add Friends
           </button>
@@ -191,72 +289,6 @@ export default function Leaderboard() {
           </button>
         </div>
       </div>
-
-      {/* 1. PENDING REQUESTS PANEL (Only visible if > 0 requests) */}
-      {pendingRequests.length > 0 && (
-        <div className="pending-invites-section">
-          <div className="pending-header">
-            <Bell size={16} color="var(--accent-gold)" className="bell-alert" />
-            <h3>Pending Invites ({pendingRequests.length})</h3>
-          </div>
-          <div className="pending-list">
-            {pendingRequests.map((req) => (
-              <div key={req.friendship_id} className="pending-item">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {req.profile_image_url ? (
-                    <div 
-                      style={{ 
-                        width: '36px', 
-                        height: '36px', 
-                        borderRadius: '50%', 
-                        overflow: 'hidden', 
-                        border: '1.5px solid var(--accent-cyan)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'var(--panel-bg)'
-                      }}
-                    >
-                      <img 
-                        src={req.profile_image_url} 
-                        alt={req.username} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  ) : (
-                    <div 
-                      style={{ 
-                        width: '36px', 
-                        height: '36px', 
-                        borderRadius: '50%', 
-                        backgroundColor: 'rgba(255,255,255,0.05)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                      }}
-                    >
-                      <User size={18} color="var(--text-secondary)" />
-                    </div>
-                  )}
-                  <div className="pending-info">
-                    <span className="pending-username">@{req.username.replace('@', '')}</span>
-                    <span className="pending-subtitle">Lvl {req.level} • {req.total_xp} XP</span>
-                  </div>
-                </div>
-                <div className="pending-actions">
-                  <button className="pending-action-btn accept" onClick={() => handleAcceptInvite(req.friendship_id, req.username)} title="Accept Request">
-                    <Check size={16} />
-                  </button>
-                  <button className="pending-action-btn decline" onClick={() => handleDeclineInvite(req.friendship_id)} title="Decline Request">
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Timeframe Selector Tabs (Only if user has friends) */}
       {hasFriends && (
@@ -366,7 +398,6 @@ export default function Leaderboard() {
                         @{row.username.replace('@', '')}
                         {row.is_user && <span className="current-user-tag">YOU</span>}
                       </span>
-                      <span className="ranking-level-pill">Level {row.level}</span>
                     </div>
                   </div>
 
@@ -399,6 +430,87 @@ export default function Leaderboard() {
             friendCode={userProfile.friend_code}
           />
         </>
+      )}
+
+      {/* Pending Requests Modal Popup */}
+      {isPendingModalOpen && (
+        <div className="cl-modal-overlay" onClick={() => setIsPendingModalOpen(false)}>
+          <div className="cl-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', width: '90%', maxHeight: '80vh', overflowY: 'auto', padding: '24px', background: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 12px 40px rgba(0,0,0,0.6)' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#fff', margin: 0 }}>Friend Requests</h2>
+              <button className="close-modal" onClick={() => setIsPendingModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Section 1: Received Requests */}
+            <div className="pending-section" style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--accent-cyan)', marginBottom: '12px', letterSpacing: '0.05em', fontWeight: '700' }}>Received ({pendingRequests.length})</h3>
+              {pendingRequests.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', padding: '12px 0' }}>No received requests.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendingRequests.map(req => (
+                    <div key={req.friendship_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {req.profile_image_url ? (
+                          <img src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={16} color="var(--text-secondary)" />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>@{req.username.replace('@', '')}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{req.total_xp} XP</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="pending-action-btn accept" onClick={() => handleAcceptInvite(req.friendship_id, req.username)} style={{ padding: '6px', borderRadius: '8px', background: 'rgba(102, 252, 241, 0.1)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={14} />
+                        </button>
+                        <button className="pending-action-btn decline" onClick={() => handleDeclineInvite(req.friendship_id)} style={{ padding: '6px', borderRadius: '8px', background: 'rgba(255, 75, 75, 0.1)', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: Sent Requests */}
+            <div className="pending-section">
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--accent-cyan)', marginBottom: '12px', letterSpacing: '0.05em', fontWeight: '700' }}>Sent ({sentRequests.length})</h3>
+              {sentRequests.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', padding: '12px 0' }}>No pending sent requests.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {sentRequests.map(req => (
+                    <div key={req.friendship_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {req.profile_image_url ? (
+                          <img src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={16} color="var(--text-secondary)" />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>@{req.username.replace('@', '')}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{req.total_xp} XP</span>
+                        </div>
+                      </div>
+                      <button onClick={() => handleUnsendRequest(req.friendship_id)} style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

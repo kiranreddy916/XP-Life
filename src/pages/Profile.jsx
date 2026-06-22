@@ -14,6 +14,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
+  const [personalRecords, setPersonalRecords] = useState([]);
   const [editForm, setEditForm] = useState({
     username: '',
     gender: '',
@@ -203,6 +204,28 @@ export default function Profile() {
       }
     };
     fetchFriends();
+  }, []);
+
+  // Fetch top 3 PRs for profile preview
+  useEffect(() => {
+    const fetchPRs = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data, error } = await supabase
+          .from('exercise_prs')
+          .select('exercise_name, best_weight, best_reps, best_volume, achieved_at')
+          .eq('user_id', session.user.id)
+          .order('best_volume', { ascending: false })
+          .limit(3);
+        if (!error && data) {
+          setPersonalRecords(data);
+        }
+      } catch (err) {
+        console.error("Error fetching PRs for profile preview:", err);
+      }
+    };
+    fetchPRs();
   }, []);
 
   const handleSignout = async () => {
@@ -538,7 +561,7 @@ export default function Profile() {
 
   // === DEFAULT PROFILE VIEW ===
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
+    <div className="animate-fade-in" style={{ paddingBottom: '160px' }}>
       {/* Settings Modal */}
       {showSettings && (
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
@@ -661,38 +684,40 @@ export default function Profile() {
           <h3>Friend Streaks</h3>
         </div>
         <div className="horizontal-list">
-          {/* Display real friends streaks with custom images */}
-          {friendsList.map(friend => (
-            <div key={friend.friend_profile_id} className="friend-item">
-              <div 
-                className="friend-circle" 
-                style={{ 
-                  position: 'relative',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}
-              >
-                {friend.profile_image_url ? (
-                  <img 
-                    src={friend.profile_image_url} 
-                    alt={friend.username} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <User size={24} color="var(--text-secondary)" />
-                )}
+          {/* Display real friends streaks with custom images (sorted by the time they were added) */}
+          {[...friendsList]
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            .map(friend => (
+              <div key={friend.friend_profile_id} className="friend-item">
+                <div 
+                  className="friend-circle" 
+                  style={{ 
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}
+                >
+                  {friend.profile_image_url ? (
+                    <img 
+                      src={friend.profile_image_url} 
+                      alt={friend.username} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <User size={24} color="var(--text-secondary)" />
+                  )}
+                </div>
+                <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
+                  <Flame size={12} className="streak-fire-icon" />
+                  {friend.current_streak || 0}
+                </span>
+                <span className="friend-name-label">
+                  @{friend.username.replace('@', '')}
+                </span>
               </div>
-              <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
-                <Flame size={12} className="streak-fire-icon" />
-                {friend.current_streak || 0}
-              </span>
-              <span className="friend-name-label">
-                @{friend.username.replace('@', '')}
-              </span>
-            </div>
-          ))}
+            ))}
           
           {/* Add Friends Trigger Item */}
           <div className="friend-item" onClick={handleAddFriendClick} style={{ cursor: 'pointer' }}>
@@ -742,10 +767,10 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Achievements Section */}
+      {/* Personal Record Section */}
       <div className="profile-section">
         <div className="section-header">
-          <h3>Achievements</h3>
+          <h3>Personal Record</h3>
           <span
             className="section-chevron"
             onClick={() => navigate('/prs')}
@@ -754,16 +779,22 @@ export default function Profile() {
             <ChevronRight size={20} />
           </span>
         </div>
-        <div className="horizontal-list">
-           {[10, 50, 100, 200].map((val) => (
-             <div key={val} className="achievement-item">
-               <div className="achievement-icon-wrapper">
-                 <Star size={48} color="var(--accent-gold)" />
-                 <span className="achievement-badge-pill">{val}</span>
-               </div>
-             </div>
-           ))}
-        </div>
+        {personalRecords.length === 0 ? (
+          <div style={{ color: 'var(--text-secondary)', padding: '12px 0', fontSize: '13px', textAlign: 'center', width: '100%' }}>
+            No records logged yet.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+            {personalRecords.map((pr) => (
+              <div key={pr.exercise_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{pr.exercise_name}</span>
+                <span style={{ color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 700 }}>
+                  {pr.best_weight} kg × {pr.best_reps} reps
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
