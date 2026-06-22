@@ -187,7 +187,7 @@ export default function AddFriendsSheet({ isOpen, onClose, userProfile, onAddSuc
       // Real Database match: Search profiles in Supabase whose username is similar to any contact name
       const { data: allProfiles, error } = await supabase
         .from('profiles')
-        .select('id, username, level, total_xp, friend_code, gender, avatar_config');
+        .select('id, username, level, total_xp, friend_code, gender, profile_image_url');
         
       if (error) throw error;
       

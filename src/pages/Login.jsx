@@ -27,7 +27,7 @@ export default function Login() {
       const { data: profile, error } = await withTimeout(
         supabase
           .from('profiles')
-          .select('id, username, gender, avatar_config')
+          .select('id, username, gender')
           .eq('id', userId)
           .maybeSingle(),
         4500
@@ -48,8 +48,7 @@ export default function Login() {
           name,
           username: profile.username ? `@${profile.username}` : `@${session.user.email.split('@')[0]}`,
           id: userId,
-          gender: profile.gender,
-          avatar_config: profile.avatar_config
+          gender: profile.gender
         }));
         navigate('/home', { state: { isLogin: true, isNew: false, name }, replace: true });
       } else {

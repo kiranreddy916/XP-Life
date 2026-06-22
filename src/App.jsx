@@ -11,7 +11,6 @@ import Badges from './pages/Badges';
 import PersonalRecords from './pages/PersonalRecords';
 import Leaderboard from './pages/Leaderboard';
 import AddByCode from './pages/AddByCode';
-import AvatarManager from './pages/AvatarManager';
 import BottomNav from './components/BottomNav';
 import './App.css';
 
@@ -31,7 +30,6 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/badges" element={<Badges />} />
           <Route path="/prs" element={<PersonalRecords />} />
-          <Route path="/avatar-manager" element={<AvatarManager />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <BottomNav />

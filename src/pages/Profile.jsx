@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video } from 'lucide-react';
-import Avatar from '../components/Avatar';
+import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Profile() {
@@ -20,7 +19,6 @@ export default function Profile() {
     gender: '',
     height: '',
     weight: '',
-    avatar_config: {},
     profile_image_url: null
   });
   const [saving, setSaving] = useState(false);
@@ -219,7 +217,6 @@ export default function Profile() {
       gender: profile.gender || '',
       height: profile.height || '',
       weight: profile.weight || '',
-      avatar_config: profile.avatar_config || {},
       profile_image_url: profile.profile_image_url || null
     });
     setShowSettings(false);
@@ -235,7 +232,6 @@ export default function Profile() {
         gender: editForm.gender,
         height: editForm.height ? Number(editForm.height) : null,
         weight: editForm.weight ? Number(editForm.weight) : null,
-        avatar_config: editForm.avatar_config,
         profile_image_url: editForm.profile_image_url
       })
       .eq('id', profile.id);
@@ -250,7 +246,6 @@ export default function Profile() {
         ...localUser,
         username: `@${editForm.username}`,
         gender: editForm.gender,
-        avatar_config: editForm.avatar_config,
         profile_image_url: editForm.profile_image_url
       }));
 
@@ -318,7 +313,9 @@ export default function Profile() {
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <Avatar gender={editForm.gender || 'male'} config={editForm.avatar_config} size={120} />
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  <User size={50} color="var(--text-secondary)" />
+                </div>
               )}
             </div>
 
@@ -563,7 +560,7 @@ export default function Profile() {
         </button>
         <h2 className="profile-username">{profile.username}</h2>
         
-        {/* Render uploaded profile photo if exists, else NiceAvatar */}
+        {/* Render uploaded profile photo if exists, else fallback User icon */}
         {profile.profile_image_url ? (
           <div 
             style={{ 
@@ -583,7 +580,23 @@ export default function Profile() {
             />
           </div>
         ) : (
-          <Avatar gender={profile.gender || 'male'} config={profile.avatar_config} />
+          <div 
+            style={{ 
+              width: '120px', 
+              height: '120px', 
+              borderRadius: '50%', 
+              overflow: 'hidden', 
+              border: '2px solid var(--accent-cyan)',
+              boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
+              margin: '0 auto 16px auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255,255,255,0.05)'
+            }}
+          >
+            <User size={50} color="var(--text-secondary)" />
+          </div>
         )}
 
         <div className="profile-joined">@ {profile.username.replace('@', '')} • Joined {joinedDate}</div>
@@ -658,7 +671,7 @@ export default function Profile() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <Avatar gender={friend.gender || 'male'} config={friend.avatar_config} size={56} />
+                  <User size={24} color="var(--text-secondary)" />
                 )}
               </div>
               <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>

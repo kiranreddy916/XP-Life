@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Avatar from '../components/Avatar';
-import AvatarViewer from '../components/AvatarViewer';
 import Toast from '../components/Toast';
 import PRPopup from '../components/PRPopup';
 import { supabase } from '../lib/supabaseClient';
@@ -258,7 +256,6 @@ export default function Home() {
               ...JSON.parse(localStorage.getItem('user') || '{}'),
               username: data.username,
               gender: data.gender,
-              avatar_config: data.avatar_config,
               streak: data.current_streak
             }));
           }
@@ -396,31 +393,7 @@ export default function Home() {
       )}
 
       <div className="avatar-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {profile?.avatar_url ? (
-          <div style={{ width: '220px', height: '250px', position: 'relative', overflow: 'hidden', margin: '0 auto' }}>
-            <AvatarViewer avatarUrl={profile.avatar_url} height="100%" />
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <Avatar gender={user.gender || 'male'} config={user.avatar_config} size={110} />
-            <button 
-              className="btn-primary" 
-              onClick={() => navigate('/avatar-manager')}
-              style={{ 
-                padding: '8px 16px', 
-                fontSize: '13px', 
-                borderRadius: '50px', 
-                background: 'linear-gradient(135deg, #66fcf1, #863bff)', 
-                border: 'none', 
-                fontWeight: '700',
-                boxShadow: '0 4px 15px rgba(102, 252, 241, 0.25)',
-                cursor: 'pointer'
-              }}
-            >
-              Create 3D Avatar ⚡
-            </button>
-          </div>
-        )}
+        <div style={{ height: '250px' }} />
         <div className="username" style={{ marginTop: '10px' }}>{user.username}</div>
 
         <div className="level-xp-section animate-slide-up">
