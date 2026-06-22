@@ -13,7 +13,7 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
-  const [timeframe, setTimeframe] = useState('overall'); // 'weekly' | 'monthly' | 'overall'
+  const [timeframe, setTimeframe] = useState('weekly'); // 'weekly' | 'monthly' | 'overall'
   
   // Sheet & Modal controls
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
@@ -28,8 +28,6 @@ export default function Leaderboard() {
       return (b.weekly_xp || 0) - (a.weekly_xp || 0);
     } else if (timeframe === 'monthly') {
       return (b.monthly_xp || 0) - (a.monthly_xp || 0);
-    } else if (timeframe === 'yearly') {
-      return (b.yearly_xp || 0) - (a.yearly_xp || 0);
     } else {
       return (b.total_xp || 0) - (a.total_xp || 0);
     }
@@ -39,7 +37,6 @@ export default function Leaderboard() {
   const getXPValue = (row) => {
     if (timeframe === 'weekly') return row.weekly_xp || 0;
     if (timeframe === 'monthly') return row.monthly_xp || 0;
-    if (timeframe === 'yearly') return row.yearly_xp || 0;
     return row.total_xp || 0;
   };
 
@@ -77,8 +74,23 @@ export default function Leaderboard() {
       setPendingRequests(pending || []);
 
       // 3. Fetch leaderboard
+      const now = new Date();
+      
+      // Start of week (Monday)
+      const currentDay = now.getDay();
+      const diffToMonday = now.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), diffToMonday);
+      weekStart.setHours(0, 0, 0, 0);
+      
+      // Start of month
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+
       const { data: board, error: boardErr } = await supabase
-        .rpc('get_leaderboard');
+        .rpc('get_leaderboard', {
+          p_week_start: weekStart.toISOString(),
+          p_month_start: monthStart.toISOString()
+        });
         
       if (boardErr) throw boardErr;
       setLeaderboardData(board || []);
@@ -253,25 +265,19 @@ export default function Leaderboard() {
             className={`timeframe-tab-btn ${timeframe === 'weekly' ? 'active' : ''}`}
             onClick={() => setTimeframe('weekly')}
           >
-            Weekly
+            WEEK
           </button>
           <button 
             className={`timeframe-tab-btn ${timeframe === 'monthly' ? 'active' : ''}`}
             onClick={() => setTimeframe('monthly')}
           >
-            Monthly
-          </button>
-          <button 
-            className={`timeframe-tab-btn ${timeframe === 'yearly' ? 'active' : ''}`}
-            onClick={() => setTimeframe('yearly')}
-          >
-            Yearly
+            MONTH
           </button>
           <button 
             className={`timeframe-tab-btn ${timeframe === 'overall' ? 'active' : ''}`}
             onClick={() => setTimeframe('overall')}
           >
-            Overall
+            TOTAL
           </button>
         </div>
       )}
