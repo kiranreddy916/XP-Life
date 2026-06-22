@@ -319,7 +319,7 @@ export default function Profile() {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
               <button 
                 type="button"
                 className="btn-secondary" 
@@ -341,6 +341,16 @@ export default function Profile() {
                 <Image size={16} />
                 Gallery
               </button>
+              {editForm.profile_image_url && (
+                <button 
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, profile_image_url: null })}
+                  style={{ flex: '1 1 100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px', padding: '10px', background: 'rgba(255, 75, 75, 0.1)', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', borderRadius: '12px', marginTop: '4px', cursor: 'pointer' }}
+                >
+                  <Trash2 size={16} />
+                  Remove Picture
+                </button>
+              )}
             </div>
 
             {/* Hidden native input for Gallery Upload */}

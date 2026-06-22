@@ -343,7 +343,7 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="container center-content animate-fade-in" style={{ position: 'relative' }}>
+    <div className="container center-content animate-fade-in" style={{ position: 'relative', overflow: 'hidden' }}>
       {toastInfo && (
         <Toast
           title={toastInfo.title}
