@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Users, QrCode, Flame, Sparkles, UserPlus, Check, X, Bell, User } from 'lucide-react';
+import { Trophy, Users, Flame, Sparkles, UserPlus, Check, X, Bell, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import AddFriendsSheet from '../components/AddFriendsSheet';
-import QRCodeModal from '../components/QRCodeModal';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -20,7 +19,6 @@ export default function Leaderboard() {
   
   // Sheet & Modal controls
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   // Calculate if user has friends
   const hasFriends = leaderboardData.length > 1;
@@ -284,9 +282,6 @@ export default function Leaderboard() {
           <button className="btn-primary add-friends-entry-btn" onClick={() => setIsAddSheetOpen(true)}>
             <span style={{ marginRight: '6px', fontSize: '16px' }}>👥</span> Add Friends
           </button>
-          <button className="qr-code-icon-btn" onClick={() => setIsQRModalOpen(true)} title="Show QR Code">
-            <QrCode size={22} />
-          </button>
         </div>
       </div>
 
@@ -418,20 +413,12 @@ export default function Leaderboard() {
 
       {/* Sheet & Modal overlays */}
       {userProfile && (
-        <>
-          <AddFriendsSheet
-            isOpen={isAddSheetOpen}
-            onClose={() => setIsAddSheetOpen(false)}
-            userProfile={userProfile}
-            onAddSuccess={fetchData}
-          />
-          <QRCodeModal
-            isOpen={isQRModalOpen}
-            onClose={() => setIsQRModalOpen(false)}
-            username={userProfile.username}
-            friendCode={userProfile.friend_code}
-          />
-        </>
+        <AddFriendsSheet
+          isOpen={isAddSheetOpen}
+          onClose={() => setIsAddSheetOpen(false)}
+          userProfile={userProfile}
+          onAddSuccess={fetchData}
+        />
       )}
 
       {/* Pending Requests Modal Popup */}

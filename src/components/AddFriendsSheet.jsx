@@ -261,7 +261,7 @@ export default function AddFriendsSheet({ isOpen, onClose, userProfile, onAddSuc
               </div>
               <div className="sheet-tab-info">
                 <span className="sheet-tab-title">Share follow link</span>
-                <span className="sheet-tab-desc">Generate and copy QR shortened share link</span>
+                <span className="sheet-tab-desc">Generate and copy shortened share link</span>
               </div>
               <ArrowRight size={18} className="sheet-tab-chevron" />
             </button>
