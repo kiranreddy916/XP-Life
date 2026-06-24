@@ -6,6 +6,18 @@ import Toast from '../components/Toast';
 
 const SYSTEM_TASK_NAMES = ['Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox'];
 
+const SYSTEM_TASK_DESCRIPTIONS = {
+  'Sleep': 'Get 7-8 hours of quality sleep to optimize recovery, cognitive function, and hormone balance.',
+  'Sun Light': 'Get 10-15 minutes of direct morning sunlight to regulate your circadian rhythm and boost Vitamin D.',
+  'Exercise': 'Engage in at least 30 minutes of physical activity to build strength, endurance, and mental clarity.',
+  'Eat Clean': 'Fuel your body with whole, nutrient-dense foods. Avoid processed sugars and seed oils.',
+  'Hydrate': 'Drink at least 3-4 liters of water throughout the day to stay fully hydrated and maintain peak performance.',
+  'Learn': 'Spend 20-30 minutes reading, studying, or practicing a new skill to foster continuous personal growth.',
+  'No Porn': 'Abstain from porn to rebalance dopamine levels, improve focus, and cultivate healthy relationships.',
+  'No Alcohol': 'Avoid alcohol to maintain optimal sleep quality, liver health, and clear mental focus.',
+  'SM Detox': 'Limit social media usage or do a complete detox to reclaim your attention span and reduce anxiety.'
+};
+
 export default function Checklist() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
@@ -15,6 +27,8 @@ export default function Checklist() {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [toastInfo, setToastInfo] = useState(null);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [selectedDescriptionTask, setSelectedDescriptionTask] = useState(null);
 
   useEffect(() => {
     fetchTasks();
@@ -133,10 +147,32 @@ export default function Checklist() {
     setShowModal(true);
   };
 
+  const handlePressStart = (task, isSystem) => {
+    if (!isSystem) return;
+
+    if (longPressTimer) clearTimeout(longPressTimer);
+
+    const timer = setTimeout(() => {
+      setSelectedDescriptionTask(task);
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 600); // 600ms long press
+
+    setLongPressTimer(timer);
+  };
+
+  const handlePressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
   const systemTasks = tasks.filter(t => SYSTEM_TASK_NAMES.includes(t.title));
   const generalTasks = tasks.filter(t => !SYSTEM_TASK_NAMES.includes(t.title));
 
-  const renderTaskList = (list) => {
+  const renderTaskList = (list, isSystem = false) => {
     if (loading) {
       return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tasks...</div>;
     }
@@ -144,11 +180,24 @@ export default function Checklist() {
       return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>No tasks yet.</div>;
     }
     return list.map((task, index) => (
-      <div key={task.id} className={`cl-task-row ${index < list.length - 1 ? 'cl-task-divider' : ''}`}>
+      <div 
+        key={task.id} 
+        className={`cl-task-row ${index < list.length - 1 ? 'cl-task-divider' : ''}`}
+        onMouseDown={() => handlePressStart(task, isSystem)}
+        onMouseUp={handlePressEnd}
+        onMouseLeave={handlePressEnd}
+        onTouchStart={() => handlePressStart(task, isSystem)}
+        onTouchEnd={handlePressEnd}
+        onTouchMove={handlePressEnd}
+        style={{ cursor: isSystem ? 'pointer' : 'default', userSelect: 'none', WebkitUserSelect: 'none' }}
+      >
         {/* Checkbox */}
         <div
           className={`cl-checkbox ${task.completed ? 'cl-checkbox-done' : ''}`}
-          onClick={() => toggleTask(task)}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleTask(task);
+          }}
         >
           {task.completed && (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0c10" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -174,17 +223,22 @@ export default function Checklist() {
           )}
         </div>
 
-        {/* Menu */}
-        <button className="cl-menu-btn" onClick={() => setActiveMenuId(task.id)}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
-        </button>
+        {/* Menu (Only for General Tasks) */}
+        {!isSystem && (
+          <button className="cl-menu-btn" onClick={(e) => {
+            e.stopPropagation();
+            setActiveMenuId(task.id);
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="19" cy="12" r="1" />
+              <circle cx="5" cy="12" r="1" />
+            </svg>
+          </button>
+        )}
 
-        {/* Context Menu Dropdown */}
-        {activeMenuId === task.id && (
+        {/* Context Menu Dropdown (Only for General Tasks) */}
+        {!isSystem && activeMenuId === task.id && (
           <>
             <div className="cl-menu-overlay" onClick={() => setActiveMenuId(null)} />
             <div className={`cl-context-menu ${index >= list.length - 3 ? 'menu-up' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -244,7 +298,7 @@ export default function Checklist() {
           <span className="cl-panel-title">System Tasks</span>
         </div>
         <div className="cl-task-list">
-          {renderTaskList(systemTasks)}
+          {renderTaskList(systemTasks, true)}
         </div>
       </div>
 
@@ -255,7 +309,7 @@ export default function Checklist() {
           <button className="cl-add-btn" onClick={openNewTaskModal}>+</button>
         </div>
         <div className="cl-task-list">
-          {renderTaskList(generalTasks)}
+          {renderTaskList(generalTasks, false)}
         </div>
       </div>
 
@@ -282,6 +336,33 @@ export default function Checklist() {
               <button className="cl-cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
               <button className="cl-confirm-btn" onClick={handleSaveTask}>
                 {editingTask ? 'Save Changes' : 'Add Task'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Description Popup Modal for System Tasks */}
+      {selectedDescriptionTask && (
+        <div className="cl-modal-overlay" onClick={() => setSelectedDescriptionTask(null)}>
+          <div className="cl-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cl-modal-header" style={{ borderBottom: 'none', paddingBottom: '5px' }}>
+              <h2 className="cl-modal-title" style={{ fontSize: '18px', color: 'var(--accent-cyan)' }}>
+                {selectedDescriptionTask.title}
+              </h2>
+            </div>
+            <div className="cl-modal-body" style={{ padding: '10px 24px 24px' }}>
+              <p style={{ fontSize: '14.5px', color: '#ffffff', lineHeight: '1.6', margin: 0 }}>
+                {SYSTEM_TASK_DESCRIPTIONS[selectedDescriptionTask.title]}
+              </p>
+            </div>
+            <div className="cl-modal-footer" style={{ borderTop: 'none', paddingTop: '5px', justifyContent: 'center' }}>
+              <button 
+                className="cl-confirm-btn" 
+                onClick={() => setSelectedDescriptionTask(null)}
+                style={{ width: '100%', maxWidth: '150px' }}
+              >
+                Got it 👊
               </button>
             </div>
           </div>

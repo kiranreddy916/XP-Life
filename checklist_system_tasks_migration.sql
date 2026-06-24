@@ -1,7 +1,35 @@
--- Migration to update checklist completion:
--- 1. Evaluates completion using only System Tasks (not General Tasks)
--- 2. Returns level_up information directly in the response to eliminate redundant client-side queries
+-- Migration to update checklist functionality:
+-- 1. Fixes the General Tasks bug where one-off tasks (repeat daily = OFF) would still show up on subsequent days after being completed.
+-- 2. Restricts the checklist completion XP award check to only System Tasks.
+-- 3. Returns level-up details directly in the toggle_task response to eliminate redundant client-side queries.
 
+-- Get Checklist Tasks (with automatic daily reset and one-off task filtration)
+CREATE OR REPLACE FUNCTION get_checklist_tasks(p_client_date DATE DEFAULT current_date) RETURNS SETOF checklist_tasks AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+BEGIN
+  -- Reset daily tasks that weren't completed today
+  UPDATE checklist_tasks
+  SET completed = false, last_completed_at = NULL
+  WHERE user_id = v_user_id 
+    AND is_daily = true 
+    AND completed = true 
+    AND (last_completed_at IS NULL OR last_completed_at < p_client_date);
+
+  RETURN QUERY 
+  SELECT * FROM checklist_tasks 
+  WHERE user_id = v_user_id 
+    AND (
+      is_daily = true 
+      OR 
+      (is_daily = false AND (completed = false OR last_completed_at IS NULL OR last_completed_at = p_client_date))
+    )
+  ORDER BY created_at ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Toggle Task and Handle +50 XP Reward (System Tasks only, returning level_up details)
 CREATE OR REPLACE FUNCTION toggle_task(p_task_id UUID, p_completed BOOLEAN, p_client_date DATE DEFAULT current_date) RETURNS JSONB AS $$
 DECLARE
   v_user_id UUID := auth.uid();

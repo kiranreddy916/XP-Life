@@ -359,7 +359,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Get Checklist Tasks (with automatic daily reset)
 CREATE OR REPLACE FUNCTION get_checklist_tasks(p_client_date DATE DEFAULT current_date) RETURNS SETOF checklist_tasks AS $$
 DECLARE
   v_user_id UUID := auth.uid();
@@ -372,7 +371,15 @@ BEGIN
     AND completed = true 
     AND (last_completed_at IS NULL OR last_completed_at < p_client_date);
 
-  RETURN QUERY SELECT * FROM checklist_tasks WHERE user_id = v_user_id ORDER BY created_at ASC;
+  RETURN QUERY 
+  SELECT * FROM checklist_tasks 
+  WHERE user_id = v_user_id 
+    AND (
+      is_daily = true 
+      OR 
+      (is_daily = false AND (completed = false OR last_completed_at IS NULL OR last_completed_at = p_client_date))
+    )
+  ORDER BY created_at ASC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
