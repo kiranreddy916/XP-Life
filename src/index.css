@@ -3246,3 +3246,17 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: inset 0 0 8px rgba(102, 252, 241, 0.05);
   border: 1px solid rgba(102, 252, 241, 0.2);
 }
+
+.leaderboard-timeframe-tabs.theme-capsule {
+  border: 1px solid rgba(102, 252, 241, 0.3);
+  background: rgba(102, 252, 241, 0.04);
+}
+
+.timeframe-tab-btn.theme-btn {
+  color: var(--accent-cyan);
+}
+
+.timeframe-tab-btn.theme-btn:hover {
+  background: rgba(102, 252, 241, 0.1);
+  color: #fff;
+}

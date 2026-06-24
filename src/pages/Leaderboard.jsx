@@ -243,9 +243,9 @@ export default function Leaderboard() {
         </h2>
         
         {/* Actions Capsule */}
-        <div className="leaderboard-timeframe-tabs" style={{ margin: 0, width: '100%' }}>
+        <div className="leaderboard-timeframe-tabs theme-capsule" style={{ margin: 0, width: '100%' }}>
           <button 
-            className="timeframe-tab-btn"
+            className="timeframe-tab-btn theme-btn"
             onClick={() => setIsPendingModalOpen(true)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
@@ -267,7 +267,7 @@ export default function Leaderboard() {
             )}
           </button>
           <button 
-            className="timeframe-tab-btn" 
+            className="timeframe-tab-btn theme-btn" 
             onClick={() => setIsAddSheetOpen(true)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
