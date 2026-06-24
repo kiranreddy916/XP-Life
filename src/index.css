@@ -3387,27 +3387,3 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: inset 0 0 8px rgba(102, 252, 241, 0.05);
   border: 1px solid rgba(102, 252, 241, 0.2);
 }
-
-#landscape-overlay {
-  display: none;
-}
-@media screen and (orientation: landscape) and (max-height: 600px) {
-  #landscape-overlay {
-    display: flex;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--bg-color);
-    z-index: 999999;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    color: white;
-    font-size: 20px;
-    font-weight: 700;
-    text-align: center;
-    padding: 30px;
-  }
-  #root {
-    display: none !important;
-  }
-}
