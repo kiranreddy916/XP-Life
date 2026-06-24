@@ -441,7 +441,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="avatar-container" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: '20px', marginBottom: 0 }}>
+      <div className="avatar-container" style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className="username" style={{ marginTop: '10px' }}>{user.username}</div>
 
         <div className="level-xp-section animate-slide-up">
