@@ -55,6 +55,17 @@ export default function Home() {
   const [noTransition, setNoTransition] = useState(false);
   const [weeklyStatus, setWeeklyStatus] = useState(Array(7).fill(''));
   const prevProfileRef = useRef(null);
+  const pendingXpAnimationRef = useRef(null);
+
+  // Capture pending XP animation state on mount before it is cleared by state-clearing navigation
+  useEffect(() => {
+    if (location.state && (location.state.checklistCompleted || location.state.workoutFinished)) {
+      pendingXpAnimationRef.current = {
+        xpEarned: location.state.xpEarned || 0,
+        levelUp: location.state.levelUp
+      };
+    }
+  }, [location.state]);
 
   // Shuffle-without-repeat queue
   const restQueueRef = useRef([]);
@@ -81,7 +92,40 @@ export default function Home() {
     if (!profile) return;
 
     if (!prevProfileRef.current) {
-      // First load / returning to home screen: animate from 0 to current XP
+      // First load / returning to home screen: check if we have a pending XP animation captured on mount
+      if (pendingXpAnimationRef.current) {
+        const { xpEarned, levelUp } = pendingXpAnimationRef.current;
+        pendingXpAnimationRef.current = null; // Clear it so we don't run it again
+        
+        const oldLevel = levelUp ? (profile.level - 1) : profile.level;
+        let oldXp = profile.xp - xpEarned;
+        if (levelUp) {
+          const oldThreshold = getLevelThreshold(oldLevel);
+          oldXp = oldThreshold - (xpEarned - profile.xp);
+          if (oldXp < 0) oldXp = 0;
+        }
+
+        // Set display to old values, and save as prevProfile to trigger the animation loop
+        setNoTransition(true);
+        setDisplayLevel(oldLevel);
+        setDisplayXp(oldXp);
+
+        prevProfileRef.current = {
+          ...profile,
+          level: oldLevel,
+          xp: oldXp
+        };
+
+        // On next tick, enable transition and trigger standard animation
+        setTimeout(() => {
+          setNoTransition(false);
+          setProfile(prev => ({ ...prev }));
+        }, 50);
+        
+        return;
+      }
+
+      // Default first load: animate from 0 to current XP
       setNoTransition(true);
       setDisplayXp(0);
       setDisplayLevel(profile.level || 1);
