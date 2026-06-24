@@ -55,20 +55,40 @@ export default function Checklist() {
   };
 
   const toggleTask = async (task) => {
-    // Optimistic UI update
-    setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+    const newCompletedState = !task.completed;
+    let allSystemCompletedOptimistic = false;
+
+    // Optimistic UI update using functional state
+    setTasks(prev => {
+      const newTasks = prev.map(t => t.id === task.id ? { ...t, completed: newCompletedState } : t);
+      
+      const sysTasks = newTasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title)));
+      allSystemCompletedOptimistic = newCompletedState && sysTasks.length > 0 && sysTasks.every(t => t.completed);
+      
+      return newTasks;
+    });
+
+    if (allSystemCompletedOptimistic) {
+      navigate('/home', {
+        state: {
+          checklistCompleted: true,
+          xpEarned: 50,
+          levelUp: false
+        }
+      });
+    }
     
     try {
       const { data, error } = await supabase.rpc('toggle_task', {
         p_task_id: task.id,
-        p_completed: !task.completed,
+        p_completed: newCompletedState,
         p_client_date: getLocalDateStr()
       });
       
       if (error) {
         console.error('Error toggling task:', error);
-        fetchTasks(); // Revert on error
-      } else if (data?.xp_awarded > 0) {
+        if (!allSystemCompletedOptimistic) fetchTasks(); // Revert on error
+      } else if (!allSystemCompletedOptimistic && data?.xp_awarded > 0) {
         navigate('/home', {
           state: {
             checklistCompleted: true,
@@ -79,7 +99,7 @@ export default function Checklist() {
       }
     } catch (err) {
       console.error(err);
-      fetchTasks();
+      if (!allSystemCompletedOptimistic) fetchTasks();
     }
   };
 
@@ -116,7 +136,7 @@ export default function Checklist() {
 
   const handleToggleDaily = async (task) => {
     setActiveMenuId(null);
-    setTasks(tasks.map(t => t.id === task.id ? { ...t, is_daily: !t.is_daily } : t));
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_daily: !t.is_daily } : t));
     
     await supabase
       .from('checklist_tasks')
@@ -126,7 +146,7 @@ export default function Checklist() {
 
   const handleDeleteTask = async (id) => {
     setActiveMenuId(null);
-    setTasks(tasks.filter(t => t.id !== id)); // Optimistic remove
+    setTasks(prev => prev.filter(t => t.id !== id)); // Optimistic remove
     
     await supabase
       .from('checklist_tasks')

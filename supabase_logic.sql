@@ -374,10 +374,14 @@ BEGIN
   RETURN QUERY 
   SELECT * FROM checklist_tasks 
   WHERE user_id = v_user_id 
+    AND NOT (is_system = false AND title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox'))
     AND (
       is_daily = true 
       OR 
-      (is_daily = false AND (completed = false OR last_completed_at IS NULL OR last_completed_at = p_client_date))
+      (is_daily = false AND (
+        last_completed_at = p_client_date OR
+        (completed = false AND created_at >= (p_client_date - INTERVAL '1 day'))
+      ))
     )
   ORDER BY created_at ASC;
 END;

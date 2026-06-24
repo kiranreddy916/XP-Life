@@ -245,21 +245,8 @@ export default function Leaderboard() {
         {/* Buttons Row */}
         <div className="leaderboard-buttons-row" style={{ gap: '8px' }}>
           <button 
-            className="btn-secondary" 
+            className="header-action-btn"
             onClick={() => setIsPendingModalOpen(true)}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              fontSize: '13px', 
-              padding: '10px 14px', 
-              borderRadius: '12px', 
-              border: '1px solid rgba(102, 252, 241, 0.2)', 
-              background: 'rgba(102, 252, 241, 0.05)', 
-              color: 'var(--accent-cyan)',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
           >
             <Bell size={15} />
             Pending
@@ -279,7 +266,7 @@ export default function Leaderboard() {
               </span>
             )}
           </button>
-          <button className="btn-primary add-friends-entry-btn" onClick={() => setIsAddSheetOpen(true)}>
+          <button className="header-action-btn" onClick={() => setIsAddSheetOpen(true)}>
             <span style={{ marginRight: '6px', fontSize: '16px' }}>👥</span> Add Friends
           </button>
         </div>
