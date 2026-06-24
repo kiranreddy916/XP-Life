@@ -16,16 +16,59 @@ import './App.css';
 
 function App() {
   useEffect(() => {
-    // Lock screen orientation to portrait if supported
+    // Attempt native lock first
     try {
-      if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-        window.screen.orientation.lock('portrait').catch((err) => {
-          console.warn('Orientation lock not active:', err);
-        });
+      if (window.screen?.orientation?.lock) {
+        window.screen.orientation.lock('portrait').catch(e => console.warn('Native lock blocked:', e));
       }
     } catch (e) {
-      console.error('Orientation lock error:', e);
+      console.error(e);
     }
+
+    // Force CSS orientation lock for devices that ignore native lock
+    const handleOrientation = () => {
+      const angle = window.screen?.orientation?.angle || window.orientation || 0;
+      const root = document.getElementById('root');
+      if (!root) return;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      if (angle === 90) {
+        // Rotated left
+        root.style.transform = 'rotate(-90deg) translateX(-100%)';
+        root.style.transformOrigin = 'top left';
+        root.style.width = `${h}px`;
+        root.style.height = `${w}px`;
+        root.style.position = 'absolute';
+        document.body.style.overflow = 'hidden';
+      } else if (angle === -90 || angle === 270) {
+        // Rotated right
+        root.style.transform = 'rotate(90deg) translateY(-100%)';
+        root.style.transformOrigin = 'top left';
+        root.style.width = `${h}px`;
+        root.style.height = `${w}px`;
+        root.style.position = 'absolute';
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Portrait
+        root.style.transform = '';
+        root.style.transformOrigin = '';
+        root.style.width = '100%';
+        root.style.height = '100%';
+        root.style.position = 'relative';
+        document.body.style.overflow = '';
+      }
+    };
+
+    window.addEventListener('orientationchange', handleOrientation);
+    window.addEventListener('resize', handleOrientation);
+    handleOrientation(); // Init
+
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientation);
+      window.removeEventListener('resize', handleOrientation);
+    };
   }, []);
 
   return (
