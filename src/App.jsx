@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
@@ -15,6 +15,19 @@ import BottomNav from './components/BottomNav';
 import './App.css';
 
 function App() {
+  useEffect(() => {
+    // Lock screen orientation to portrait if supported
+    try {
+      if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+        window.screen.orientation.lock('portrait').catch((err) => {
+          console.warn('Orientation lock not active:', err);
+        });
+      }
+    } catch (e) {
+      console.error('Orientation lock error:', e);
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <div className="app-layout">

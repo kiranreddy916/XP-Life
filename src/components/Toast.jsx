@@ -4,6 +4,7 @@ export default function Toast({ title, message, onClose, onDone, duration = 3000
   const [isHiding, setIsHiding] = useState(false);
 
   useEffect(() => {
+    setIsHiding(false); // Reset animation state on prop changes
     const hideTimer = setTimeout(() => {
       setIsHiding(true);
     }, duration - 400); // Start hiding animation 400ms before duration ends
@@ -17,7 +18,7 @@ export default function Toast({ title, message, onClose, onDone, duration = 3000
       clearTimeout(hideTimer);
       clearTimeout(closeTimer);
     };
-  }, [duration, onClose, onDone]);
+  }, [title, message, duration, onClose, onDone]);
 
   return (
     <div className="toast-container">

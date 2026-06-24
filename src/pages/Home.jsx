@@ -47,6 +47,7 @@ export default function Home() {
   const [profile, setProfile] = useState(null);
   const [restPopup, setRestPopup] = useState(null);
   const [prQueue, setPrQueue] = useState(null); // array of exercise names that hit PRs
+  const [isResting, setIsResting] = useState(false);
 
   // Animated XP state
   const [displayXp, setDisplayXp] = useState(0);
@@ -188,6 +189,8 @@ export default function Home() {
   };
 
   const handleRestClick = async () => {
+    if (isResting) return;
+    setIsResting(true);
     try {
       const todayStr = formatDate(new Date());
       const { data, error } = await supabase.rpc('log_rest_day', { p_client_date: todayStr });
@@ -199,22 +202,42 @@ export default function Home() {
         // Success
         setRestPopup(getNextRestMessage());
         
-        // Refresh profile and weekly status
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (profileData) setProfile(profileData);
-          
-          // REFRESH TRACKER INSTANTLY
-          await fetchWeeklyStatus(session.user.id);
+        // Optimistically update UI instantly (no lag)
+        if (data && data.streak !== undefined) {
+          setProfile(prev => prev ? { ...prev, current_streak: data.streak } : null);
+        }
+        
+        // Optimistically set today's status to cyan (rest day)
+        const todayDayIndex = (new Date().getDay() || 7) - 1; // 0-6 (Mon-Sun)
+        setWeeklyStatus(prev => {
+          const next = [...prev];
+          next[todayDayIndex] = 'active-cyan';
+          return next;
+        });
+
+        // Background parallel sync (non-blocking)
+        const userId = profile?.id || user?.id;
+        if (userId) {
+          Promise.all([
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .maybeSingle(),
+            fetchWeeklyStatus(userId)
+          ]).then(([profileRes, _]) => {
+            if (profileRes?.data) {
+              setProfile(profileRes.data);
+            }
+          }).catch(err => {
+            console.error("Background rest sync error:", err);
+          });
         }
       }
     } catch (err) {
       console.error("Rest day error:", err);
+    } finally {
+      setIsResting(false);
     }
   };
 
@@ -363,6 +386,7 @@ export default function Home() {
     <div className="container center-content animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(75px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none' }}>
       {toastInfo && (
         <Toast
+          key={toastInfo.title + toastInfo.message}
           title={toastInfo.title}
           message={toastInfo.message}
           duration={toastInfo.duration}
@@ -409,8 +433,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="avatar-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ height: '250px' }} />
+      <div className="avatar-container" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: '20px' }}>
         <div className="username" style={{ marginTop: '10px' }}>{user.username}</div>
 
         <div className="level-xp-section animate-slide-up">

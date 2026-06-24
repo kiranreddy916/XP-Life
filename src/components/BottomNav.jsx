@@ -13,23 +13,23 @@ export default function BottomNav() {
 
   return (
     <nav className="bottom-nav">
-      <NavLink to="/home" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/home" replace className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
         <Home className="nav-icon" />
         <span>Home</span>
       </NavLink>
-      <NavLink to="/exercise" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/exercise" replace className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
         <Dumbbell className="nav-icon" />
         <span>Exercise</span>
       </NavLink>
-      <NavLink to="/checklist" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/checklist" replace className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
         <CheckSquare className="nav-icon" />
         <span>Checklist</span>
       </NavLink>
-      <NavLink to="/leaderboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/leaderboard" replace className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
         <Trophy className="nav-icon" />
         <span>Leaderboard</span>
       </NavLink>
-      <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/profile" replace className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
         <User className="nav-icon" />
         <span>Profile</span>
       </NavLink>
