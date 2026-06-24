@@ -3,10 +3,9 @@
   "short_name": "fitquest",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0c10",
-  "theme_color": "#0b0c10",
-  "description": "Fitness tracking and leveling up",
   "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/favicon.svg",
