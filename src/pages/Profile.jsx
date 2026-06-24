@@ -331,6 +331,8 @@ export default function Profile() {
             <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent-cyan)' }}>
               {editForm.profile_image_url ? (
                 <img 
+                  draggable="false"
+                  onContextMenu={(e) => e.preventDefault()}
                   src={editForm.profile_image_url} 
                   alt="Preview" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -607,6 +609,8 @@ export default function Profile() {
             }}
           >
             <img 
+              draggable="false"
+              onContextMenu={(e) => e.preventDefault()}
               src={profile.profile_image_url} 
               alt={profile.username} 
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -701,6 +705,8 @@ export default function Profile() {
                 >
                   {friend.profile_image_url ? (
                     <img 
+                      draggable="false"
+                      onContextMenu={(e) => e.preventDefault()}
                       src={friend.profile_image_url} 
                       alt={friend.username} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -756,7 +762,7 @@ export default function Profile() {
                   <div className={`badge-circle ${badge.status === 'achieved' ? 'badge-circle-achieved' : badge.status === 'missed' ? 'badge-circle-missed' : 'badge-circle-locked'}`}>
                     {badge.status === 'locked'
                       ? <Lock size={28} className="badge-lock-icon" />
-                      : <img src={badge.image_url} alt={badge.month} className="badge-img" style={{ filter: badge.status === 'missed' ? 'grayscale(100%) blur(2px) opacity(60%)' : 'none' }} />}
+                      : <img draggable="false" onContextMenu={(e) => e.preventDefault()} src={badge.image_url} alt={badge.month} className="badge-img" style={{ filter: badge.status === 'missed' ? 'grayscale(100%) blur(2px) opacity(60%)' : 'none' }} />}
                   </div>
                   <span className={`badge-month-label ${badge.status === 'achieved' ? 'badge-label-achieved' : badge.status === 'missed' ? 'badge-label-missed' : 'badge-label-locked'}`}>
                     {new Date(badge.year, badge.month - 1).toLocaleString('default', { month: 'short' }).toUpperCase()}

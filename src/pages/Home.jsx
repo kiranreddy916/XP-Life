@@ -215,9 +215,15 @@ export default function Home() {
           return next;
         });
 
-        // Background parallel sync (non-blocking)
+        // Fast update for streak from DB
         const userId = profile?.id || user?.id;
         if (userId) {
+          supabase.from('profiles').select('current_streak').eq('id', userId).single().then(({ data: streakData }) => {
+            if (streakData) {
+              setProfile(prev => prev ? { ...prev, current_streak: streakData.current_streak } : null);
+            }
+          });
+          // Background parallel sync
           Promise.all([
             supabase
               .from('profiles')
@@ -391,7 +397,9 @@ export default function Home() {
           message={toastInfo.message}
           duration={toastInfo.duration}
           onDone={toastInfo.onDone}
-          onClose={() => setToastInfo(null)}
+          onClose={() => {
+            if (!toastInfo.onDone) setToastInfo(null);
+          }}
         />
       )}
 

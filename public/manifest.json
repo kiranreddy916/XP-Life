@@ -6,7 +6,7 @@
   "background_color": "#0b0c10",
   "theme_color": "#0b0c10",
   "description": "Fitness tracking and leveling up",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/favicon.svg",

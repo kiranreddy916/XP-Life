@@ -55,9 +55,6 @@ export default function PersonalRecords() {
           <div className="prs-list">
             {prs.map((pr, i) => (
               <div key={pr.exercise_name} className="pr-card">
-                <div className="pr-rank">
-                  {i === 0 ? <Trophy size={18} className="pr-rank-trophy" /> : <span className="pr-rank-num">#{i + 1}</span>}
-                </div>
                 <div className="pr-info">
                   <span className="pr-exercise-name">{pr.exercise_name}</span>
                   <span className="pr-date">Achieved {formatDate(pr.achieved_at)}</span>
@@ -70,13 +67,6 @@ export default function PersonalRecords() {
                   <div className="pr-stat-pill">
                     <span className="pr-stat-value">{pr.best_reps}<span className="pr-stat-unit">reps</span></span>
                   </div>
-                </div>
-                {/* Volume bar for visual ranking */}
-                <div className="pr-volume-bar-wrap">
-                  <div
-                    className="pr-volume-bar"
-                    style={{ width: `${Math.min(100, (pr.best_volume / (prs[0]?.best_volume || 1)) * 100)}%` }}
-                  />
                 </div>
               </div>
             ))}

@@ -67,7 +67,7 @@ export default function Badges() {
                     <div className={`badge-grid-circle ${badge.status === 'achieved' ? 'badge-achieved' : 'badge-locked'}`}>
                       {badge.status === 'locked'
                         ? <Lock size={28} className="badge-lock-icon" />
-                        : <img src={badge.image_url} alt={`${badge.year}-${badge.month}`} className="badge-grid-img" style={{ filter: badge.status === 'missed' ? 'grayscale(100%) blur(2px) opacity(60%)' : 'none' }} />}
+                        : <img draggable="false" onContextMenu={(e) => e.preventDefault()} src={badge.image_url} alt={`${badge.year}-${badge.month}`} className="badge-grid-img" style={{ filter: badge.status === 'missed' ? 'grayscale(100%) blur(2px) opacity(60%)' : 'none' }} />}
                     </div>
                     <span className={`badge-grid-label ${badge.status === 'achieved' ? 'badge-label-achieved' : 'badge-label-locked'}`} style={{ color: badge.status === 'missed' ? '#888' : '' }}>
                       {new Date(year, badge.month - 1).toLocaleString('default', { month: 'short' }).toUpperCase()}

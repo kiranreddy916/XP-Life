@@ -372,6 +372,8 @@ export default function Leaderboard() {
                         }}
                       >
                         <img 
+                          draggable="false"
+                          onContextMenu={(e) => e.preventDefault()}
                           src={row.profile_image_url} 
                           alt={row.username} 
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -454,7 +456,7 @@ export default function Leaderboard() {
                     <div key={req.friendship_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {req.profile_image_url ? (
-                          <img src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                          <img draggable="false" onContextMenu={(e) => e.preventDefault()} src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <User size={16} color="var(--text-secondary)" />
@@ -490,7 +492,7 @@ export default function Leaderboard() {
                     <div key={req.friendship_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {req.profile_image_url ? (
-                          <img src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                          <img draggable="false" onContextMenu={(e) => e.preventDefault()} src={req.profile_image_url} alt={req.username} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <User size={16} color="var(--text-secondary)" />
