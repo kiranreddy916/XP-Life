@@ -389,7 +389,7 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="container center-content animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(75px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none' }}>
+    <div className="container animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(75px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       {toastInfo && (
         <Toast
           key={toastInfo.title + toastInfo.message}
@@ -441,7 +441,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="avatar-container" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: '20px' }}>
+      <div className="avatar-container" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: '20px', marginBottom: 0 }}>
         <div className="username" style={{ marginTop: '10px' }}>{user.username}</div>
 
         <div className="level-xp-section animate-slide-up">
