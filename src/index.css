@@ -2421,34 +2421,7 @@ h1, h2, h3, h4, h5, h6 {
   filter: drop-shadow(0 0 6px rgba(102, 252, 241, 0.4));
 }
 
-.leaderboard-buttons-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.header-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0 16px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1px solid rgba(102, 252, 241, 0.2);
-  background: rgba(102, 252, 241, 0.05);
-  color: var(--accent-cyan);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.header-action-btn:hover {
-  background: rgba(102, 252, 241, 0.1);
-  border-color: rgba(102, 252, 241, 0.4);
-}
 
 /* Pending Invites Card */
 .pending-invites-section {

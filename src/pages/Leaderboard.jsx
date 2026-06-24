@@ -242,32 +242,36 @@ export default function Leaderboard() {
           Rankings
         </h2>
         
-        {/* Buttons Row */}
-        <div className="leaderboard-buttons-row" style={{ gap: '8px' }}>
+        {/* Actions Capsule */}
+        <div className="leaderboard-timeframe-tabs" style={{ margin: 0, width: '100%' }}>
           <button 
-            className="header-action-btn"
+            className="timeframe-tab-btn"
             onClick={() => setIsPendingModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            <Bell size={15} />
-            Pending
+            PENDING FRIEND
             {(pendingRequests.length + sentRequests.length) > 0 && (
               <span 
                 style={{ 
                   background: 'var(--accent-red)', 
                   color: '#fff', 
-                  fontSize: '10px', 
-                  fontWeight: '700',
-                  padding: '1px 6px', 
+                  fontSize: '11px', 
+                  fontWeight: '800',
+                  padding: '2px 6px', 
                   borderRadius: '10px', 
-                  marginLeft: '2px' 
+                  lineHeight: 1
                 }}
               >
                 {pendingRequests.length + sentRequests.length}
               </span>
             )}
           </button>
-          <button className="header-action-btn" onClick={() => setIsAddSheetOpen(true)}>
-            <span style={{ marginRight: '6px', fontSize: '16px' }}>👥</span> Add Friends
+          <button 
+            className="timeframe-tab-btn" 
+            onClick={() => setIsAddSheetOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
+            ADD FRIENDS
           </button>
         </div>
       </div>
