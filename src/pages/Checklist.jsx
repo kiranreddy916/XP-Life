@@ -169,8 +169,8 @@ export default function Checklist() {
     }
   };
 
-  const systemTasks = tasks.filter(t => SYSTEM_TASK_NAMES.includes(t.title));
-  const generalTasks = tasks.filter(t => !SYSTEM_TASK_NAMES.includes(t.title));
+  const systemTasks = tasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title)));
+  const generalTasks = tasks.filter(t => t.is_system === false || (t.is_system === undefined && !SYSTEM_TASK_NAMES.includes(t.title)));
 
   const renderTaskList = (list, isSystem = false) => {
     if (loading) {

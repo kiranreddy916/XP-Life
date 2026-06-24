@@ -144,18 +144,18 @@ BEGIN
   INSERT INTO profiles (id, username, gender, height, weight, level, xp, total_xp, current_streak, longest_streak)
   VALUES (p_user_id, p_username, p_gender, p_height, p_weight, 1, 0, 0, 0, 0);
 
-  -- Insert Default Tasks
-  INSERT INTO checklist_tasks (user_id, title, is_daily, completed)
+  -- Insert Default Tasks with is_system = true
+  INSERT INTO checklist_tasks (user_id, title, is_daily, completed, is_system)
   VALUES 
-    (p_user_id, 'Sleep', true, false),
-    (p_user_id, 'Sun Light', true, false),
-    (p_user_id, 'Exercise', true, false),
-    (p_user_id, 'Eat Clean', true, false),
-    (p_user_id, 'Hydrate', true, false),
-    (p_user_id, 'Learn', true, false),
-    (p_user_id, 'No Porn', true, false),
-    (p_user_id, 'No Alcohol', true, false),
-    (p_user_id, 'SM Detox', true, false);
+    (p_user_id, 'Sleep', true, false, true),
+    (p_user_id, 'Sun Light', true, false, true),
+    (p_user_id, 'Exercise', true, false, true),
+    (p_user_id, 'Eat Clean', true, false, true),
+    (p_user_id, 'Hydrate', true, false, true),
+    (p_user_id, 'Learn', true, false, true),
+    (p_user_id, 'No Porn', true, false, true),
+    (p_user_id, 'No Alcohol', true, false, true),
+    (p_user_id, 'SM Detox', true, false, true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -406,7 +406,7 @@ BEGIN
     SELECT COUNT(*), COUNT(NULLIF(completed, false)) INTO v_total_tasks, v_completed_tasks 
     FROM checklist_tasks 
     WHERE user_id = v_user_id 
-      AND title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox');
+      AND is_system = true;
     
     IF v_total_tasks > 0 AND v_total_tasks = v_completed_tasks THEN
       -- Give 50 XP if not already claimed today
