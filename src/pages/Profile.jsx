@@ -778,53 +778,47 @@ export default function Profile() {
           </button>
         </div>
         <div className="horizontal-list">
-          {activeFriendStreaks.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%', padding: '16px 0' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600 }}>No Active Friend Streaks</span>
-              <button 
-                className="btn-secondary" 
-                onClick={handleAddFriendClick} 
-                style={{ width: 'auto', padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+          {activeFriendStreaks.map(streak => (
+            <div key={streak.streak_id} className="friend-item">
+              <div 
+                className="friend-circle" 
+                style={{ 
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}
               >
-                <Plus size={16} />
-                Add Friend
-              </button>
-            </div>
-          ) : (
-            activeFriendStreaks.map(streak => (
-              <div key={streak.streak_id} className="friend-item">
-                <div 
-                  className="friend-circle" 
-                  style={{ 
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                  }}
-                >
-                  {streak.profile_image_url ? (
-                    <img 
-                      draggable="false"
-                      onContextMenu={(e) => e.preventDefault()}
-                      src={streak.profile_image_url} 
-                      alt={streak.username} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <User size={24} color="var(--text-secondary)" />
-                  )}
-                </div>
-                <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
-                  <Flame size={12} className="streak-fire-icon" />
-                  {streak.current_streak || 0}
-                </span>
-                <span className="friend-name-label">
-                  @{streak.username.replace('@', '')}
-                </span>
+                {streak.profile_image_url ? (
+                  <img 
+                    draggable="false"
+                    onContextMenu={(e) => e.preventDefault()}
+                    src={streak.profile_image_url} 
+                    alt={streak.username} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <User size={24} color="var(--text-secondary)" />
+                )}
               </div>
-            ))
-          )}
+              <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
+                <Flame size={12} className="streak-fire-icon" />
+                {streak.current_streak || 0}
+              </span>
+              <span className="friend-name-label">
+                @{streak.username.replace('@', '')}
+              </span>
+            </div>
+          ))}
+          
+          {/* Add Friends Trigger Item */}
+          <div className="friend-item" onClick={handleAddFriendClick} style={{ cursor: 'pointer' }}>
+            <div className="friend-circle friend-add" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Plus size={24} />
+            </div>
+            <span className="friend-streak">Add</span>
+          </div>
         </div>
       </div>
 
