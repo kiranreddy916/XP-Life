@@ -13,7 +13,11 @@ export default function Profile() {
   // Edit Profile State
   const [isEditing, setIsEditing] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [friendsList, setFriendsList] = useState([]);
+  const [activeFriendStreaks, setActiveFriendStreaks] = useState([]);
+  const [incomingInvites, setIncomingInvites] = useState([]);
+  const [friendsStreakStatuses, setFriendsStreakStatuses] = useState([]);
+  const [showStreakModal, setShowStreakModal] = useState(false);
+  const [loadingStreaks, setLoadingStreaks] = useState(true);
   const [personalRecords, setPersonalRecords] = useState([]);
   const [editForm, setEditForm] = useState({
     username: '',
@@ -191,20 +195,79 @@ export default function Profile() {
     fetchBadges();
   }, []);
 
-  // Fetch friends for streaks
+  const getLocalDateStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  };
+
+  const fetchStreakData = async () => {
+    try {
+      setLoadingStreaks(true);
+      const clientDate = getLocalDateStr();
+      // Sync streaks on load
+      await supabase.rpc('sync_my_friend_streaks', { p_client_date: clientDate });
+
+      // Fetch active streaks
+      const { data: activeStreaks, error: activeErr } = await supabase.rpc('get_active_friend_streaks');
+      if (activeErr) throw activeErr;
+      setActiveFriendStreaks(activeStreaks || []);
+
+      // Fetch streak statuses of friends (for new streak invite)
+      const { data: statuses, error: statusesErr } = await supabase.rpc('get_friends_streak_statuses');
+      if (statusesErr) throw statusesErr;
+      setFriendsStreakStatuses(statuses || []);
+
+      // Fetch incoming invites
+      const { data: invites, error: invitesErr } = await supabase.rpc('get_streak_invites');
+      if (invitesErr) throw invitesErr;
+      setIncomingInvites(invites || []);
+
+    } catch (err) {
+      console.error("Error fetching streak data:", err);
+    } finally {
+      setLoadingStreaks(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchFriends = async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_friends');
-        if (!error && data) {
-          setFriendsList(data);
-        }
-      } catch (err) {
-        console.error("Error fetching friends for streaks:", err);
-      }
-    };
-    fetchFriends();
+    fetchStreakData();
   }, []);
+
+  const handleSendInvite = async (receiverId) => {
+    const { data, error } = await supabase.rpc('send_streak_invite', { p_receiver_id: receiverId });
+    if (error) {
+      alert("Failed to send invite: " + error.message);
+    } else if (data?.success === false) {
+      alert(data.error);
+    } else {
+      fetchStreakData();
+    }
+  };
+
+  const handleAcceptInvite = async (inviteId) => {
+    const { data, error } = await supabase.rpc('accept_streak_invite', { p_invite_id: inviteId });
+    if (error) {
+      alert("Failed to accept invite: " + error.message);
+    } else if (data?.success === false) {
+      alert(data.error);
+    } else {
+      fetchStreakData();
+    }
+  };
+
+  const handleRejectInvite = async (inviteId) => {
+    const { data, error } = await supabase.rpc('reject_streak_invite', { p_invite_id: inviteId });
+    if (error) {
+      alert("Failed to reject invite: " + error.message);
+    } else if (data?.success === false) {
+      alert(data.error);
+    } else {
+      fetchStreakData();
+    }
+  };
 
   // Fetch top 3 PRs for profile preview
   useEffect(() => {
@@ -593,7 +656,6 @@ export default function Profile() {
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           <Settings size={24} />
         </button>
-        <h2 className="profile-username">{profile.username}</h2>
         
         {/* Render uploaded profile photo if exists, else fallback User icon */}
         {profile.profile_image_url ? (
@@ -605,7 +667,7 @@ export default function Profile() {
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '0 auto 16px auto'
+              margin: '0 auto 8px auto'
             }}
           >
             <img 
@@ -625,7 +687,7 @@ export default function Profile() {
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '0 auto 16px auto',
+              margin: '0 auto 8px auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -636,10 +698,15 @@ export default function Profile() {
           </div>
         )}
 
-        <div className="profile-joined">@ {profile.username.replace('@', '')} • Joined {joinedDate}</div>
+        <h2 className="profile-username" style={{ fontSize: '20px', fontWeight: '800', marginTop: '4px', marginBottom: '2px', color: '#fff' }}>
+          @{profile.username.replace('@', '')}
+        </h2>
+        <div className="profile-joined" style={{ marginTop: '2px', marginBottom: '8px', fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          Joined {joinedDate}
+        </div>
         
         {/* Unique Friend Code display */}
-        <div className="profile-friend-code-badge" onClick={handleCopyCode} title="Click to copy friend code">
+        <div className="profile-friend-code-badge" onClick={handleCopyCode} title="Click to copy friend code" style={{ marginTop: '4px' }}>
           <span>CODE: <strong>{profile.friend_code}</strong></span>
           {copiedCode ? <Check size={13} color="var(--accent-cyan)" /> : <Copy size={13} />}
         </div>
@@ -681,18 +748,51 @@ export default function Profile() {
           </div>
         </div>
       </div>
-
       {/* Friend Streaks Section */}
       <div className="profile-section">
         <div className="section-header">
           <h3>Friend Streaks</h3>
+          <button 
+            onClick={() => setShowStreakModal(true)} 
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--accent-cyan)', 
+              fontSize: '13px', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.background = 'rgba(102, 252, 241, 0.05)'}
+            onMouseLeave={(e) => e.target.style.background = 'none'}
+          >
+            <span>Streak Invites</span>
+            {incomingInvites.length > 0 && (
+              <span style={{ background: 'var(--accent-red)', width: '8px', height: '8px', borderRadius: '50%' }} />
+            )}
+          </button>
         </div>
         <div className="horizontal-list">
-          {/* Display real friends streaks with custom images (sorted by the time they were added) */}
-          {[...friendsList]
-            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-            .map(friend => (
-              <div key={friend.friend_profile_id} className="friend-item">
+          {activeFriendStreaks.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%', padding: '16px 0' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600 }}>No Active Friend Streaks</span>
+              <button 
+                className="btn-secondary" 
+                onClick={handleAddFriendClick} 
+                style={{ width: 'auto', padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              >
+                <Plus size={16} />
+                Add Friend
+              </button>
+            </div>
+          ) : (
+            activeFriendStreaks.map(streak => (
+              <div key={streak.streak_id} className="friend-item">
                 <div 
                   className="friend-circle" 
                   style={{ 
@@ -703,12 +803,12 @@ export default function Profile() {
                     alignItems: 'center'
                   }}
                 >
-                  {friend.profile_image_url ? (
+                  {streak.profile_image_url ? (
                     <img 
                       draggable="false"
                       onContextMenu={(e) => e.preventDefault()}
-                      src={friend.profile_image_url} 
-                      alt={friend.username} 
+                      src={streak.profile_image_url} 
+                      alt={streak.username} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
@@ -717,23 +817,125 @@ export default function Profile() {
                 </div>
                 <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
                   <Flame size={12} className="streak-fire-icon" />
-                  {friend.current_streak || 0}
+                  {streak.current_streak || 0}
                 </span>
                 <span className="friend-name-label">
-                  @{friend.username.replace('@', '')}
+                  @{streak.username.replace('@', '')}
                 </span>
               </div>
-            ))}
-          
-          {/* Add Friends Trigger Item */}
-          <div className="friend-item" onClick={handleAddFriendClick} style={{ cursor: 'pointer' }}>
-            <div className="friend-circle friend-add">
-              <Plus size={24} />
-            </div>
-            <span className="friend-streak">Add</span>
-          </div>
+            ))
+          )}
         </div>
       </div>
+
+      {/* Streak Invites Modal Overlay */}
+      {showStreakModal && (
+        <div className="modal-overlay" onClick={() => setShowStreakModal(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '380px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="modal-header" style={{ marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '20px', margin: 0, fontWeight: '800' }}>Streak Invites</h2>
+              <button className="close-modal" onClick={() => setShowStreakModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '4px' }}>
+              {/* Incoming invites section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
+                  Received Invites
+                </h4>
+                {incomingInvites.length === 0 ? (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '4px 0' }}>No pending streak invites.</div>
+                ) : (
+                  incomingInvites.map(invite => (
+                    <div key={invite.invite_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
+                          {invite.profile_image_url ? (
+                            <img src={invite.profile_image_url} alt={invite.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <User size={16} color="var(--text-secondary)" />
+                          )}
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>@{invite.username.replace('@', '')}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button 
+                          className="btn-primary" 
+                          onClick={() => handleAcceptInvite(invite.invite_id)}
+                          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', cursor: 'pointer' }}
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          className="btn-secondary" 
+                          onClick={() => handleRejectInvite(invite.invite_id)}
+                          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', color: 'var(--accent-red)', borderColor: 'rgba(255,75,75,0.2)', cursor: 'pointer' }}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 0 }} />
+
+              {/* Friends list to invite */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
+                  Start a New Streak
+                </h4>
+                {friendsStreakStatuses.length === 0 ? (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '4px 0' }}>No friends available to start a streak.</div>
+                ) : (
+                  friendsStreakStatuses.map(friend => (
+                    <div key={friend.friend_profile_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
+                          {friend.profile_image_url ? (
+                            <img src={friend.profile_image_url} alt={friend.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <User size={16} color="var(--text-secondary)" />
+                          )}
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>@{friend.username.replace('@', '')}</span>
+                      </div>
+                      <div>
+                        {friend.invite_status === 'pending_sent' && (
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pending</span>
+                        )}
+                        {friend.invite_status === 'pending_received' && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              className="btn-primary" 
+                              onClick={() => handleAcceptInvite(friend.invite_id)}
+                              style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', cursor: 'pointer' }}
+                            >
+                              Accept
+                            </button>
+                          </div>
+                        )}
+                        {friend.invite_status === 'none' && (
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => handleSendInvite(friend.friend_profile_id)}
+                            style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', border: '1px solid rgba(102, 252, 241, 0.2)', color: 'var(--accent-cyan)', background: 'rgba(102, 252, 241, 0.02)', cursor: 'pointer' }}
+                          >
+                            Send Invite
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Post Masculine Challenge Section */}
       <div className="profile-section">
