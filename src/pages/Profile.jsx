@@ -28,6 +28,17 @@ export default function Profile() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (showStreakModal || showSettings || showCameraModal || isEditing) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showStreakModal, showSettings, showCameraModal, isEditing]);
   // In-app Camera state
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
