@@ -812,13 +812,37 @@ export default function Profile() {
             </div>
           ))}
           
-          {/* Add Friends Trigger Item */}
-          <div className="friend-item" onClick={handleAddFriendClick} style={{ cursor: 'pointer' }}>
+          {/* Add Friends Trigger Item (opens Streak Invites modal) */}
+          <div className="friend-item" onClick={() => setShowStreakModal(true)} style={{ cursor: 'pointer' }}>
             <div className="friend-circle friend-add" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <Plus size={24} />
             </div>
             <span className="friend-streak">Add</span>
+            <span className="friend-name-label">—</span>
           </div>
+
+          {/* Placeholders to maintain a 5-circle standard representation */}
+          {Array.from({ length: Math.max(0, 5 - (activeFriendStreaks.length + 1)) }).map((_, idx) => (
+            <div key={`placeholder-${idx}`} className="friend-item" style={{ opacity: 0.3 }}>
+              <div 
+                className="friend-circle" 
+                style={{ 
+                  border: '1px dashed rgba(255, 255, 255, 0.2)',
+                  background: 'transparent',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}
+              >
+                <User size={24} color="var(--text-secondary)" />
+              </div>
+              <span className="friend-streak" style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
+                <Flame size={12} style={{ opacity: 0 }} />
+                —
+              </span>
+              <span className="friend-name-label">—</span>
+            </div>
+          ))}
         </div>
       </div>
 
