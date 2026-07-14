@@ -841,32 +841,32 @@ export default function Profile() {
                 <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
                   Received Invites
                 </h4>
-                {incomingInvites.length === 0 ? (
+                {friendsStreakStatuses.filter(f => f.invite_status === 'pending_received').length === 0 ? (
                   <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '4px 0' }}>No pending streak invites.</div>
                 ) : (
-                  incomingInvites.map(invite => (
-                    <div key={invite.invite_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  friendsStreakStatuses.filter(f => f.invite_status === 'pending_received').map(friend => (
+                    <div key={friend.friend_profile_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
-                          {invite.profile_image_url ? (
-                            <img src={invite.profile_image_url} alt={invite.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {friend.profile_image_url ? (
+                            <img src={friend.profile_image_url} alt={friend.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <User size={16} color="var(--text-secondary)" />
                           )}
                         </div>
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>@{invite.username.replace('@', '')}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>@{friend.username.replace('@', '')}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button 
                           className="btn-primary" 
-                          onClick={() => handleAcceptInvite(invite.invite_id)}
+                          onClick={() => handleAcceptInvite(friend.invite_id)}
                           style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', cursor: 'pointer' }}
                         >
                           Accept
                         </button>
                         <button 
                           className="btn-secondary" 
-                          onClick={() => handleRejectInvite(invite.invite_id)}
+                          onClick={() => handleRejectInvite(friend.invite_id)}
                           style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', color: 'var(--accent-red)', borderColor: 'rgba(255,75,75,0.2)', cursor: 'pointer' }}
                         >
                           Decline
@@ -884,10 +884,10 @@ export default function Profile() {
                 <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
                   Start a New Streak
                 </h4>
-                {friendsStreakStatuses.length === 0 ? (
+                {friendsStreakStatuses.filter(f => f.invite_status === 'none' || f.invite_status === 'pending_sent').length === 0 ? (
                   <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '4px 0' }}>No friends available to start a streak.</div>
                 ) : (
-                  friendsStreakStatuses.map(friend => (
+                  friendsStreakStatuses.filter(f => f.invite_status === 'none' || f.invite_status === 'pending_sent').map(friend => (
                     <div key={friend.friend_profile_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
@@ -902,17 +902,6 @@ export default function Profile() {
                       <div>
                         {friend.invite_status === 'pending_sent' && (
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pending</span>
-                        )}
-                        {friend.invite_status === 'pending_received' && (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button 
-                              className="btn-primary" 
-                              onClick={() => handleAcceptInvite(friend.invite_id)}
-                              style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', height: 'auto', cursor: 'pointer' }}
-                            >
-                              Accept
-                            </button>
-                          </div>
                         )}
                         {friend.invite_status === 'none' && (
                           <button 
