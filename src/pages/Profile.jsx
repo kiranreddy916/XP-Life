@@ -783,8 +783,8 @@ export default function Profile() {
             onMouseLeave={(e) => e.target.style.background = 'none'}
           >
             <span>Streak Invites</span>
-            {incomingInvites.length > 0 && (
-              <span style={{ background: 'var(--accent-red)', width: '8px', height: '8px', borderRadius: '50%' }} />
+            {friendsStreakStatuses.some(f => f.invite_status === 'pending_received') && (
+              <span style={{ background: 'var(--accent-red)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' }} />
             )}
           </button>
         </div>
