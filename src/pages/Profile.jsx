@@ -28,6 +28,13 @@ export default function Profile() {
   });
   const [saving, setSaving] = useState(false);
 
+  // In-app Camera state
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   // Lock body scroll when any modal is open
   useEffect(() => {
     if (showStreakModal || showSettings || showCameraModal || isEditing) {
@@ -39,13 +46,6 @@ export default function Profile() {
       document.body.style.overflow = '';
     };
   }, [showStreakModal, showSettings, showCameraModal, isEditing]);
-  // In-app Camera state
-  const [showCameraModal, setShowCameraModal] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
-  const [cameraError, setCameraError] = useState(null);
-  const videoRef = useRef(null);
-  const fileInputRef = useRef(null);
-
   // Handle file upload to Supabase Storage
   const handleFileUpload = async (file) => {
     if (!file) return;
