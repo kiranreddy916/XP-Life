@@ -117,3 +117,36 @@ $$;
 -- Grant execution to authenticated users
 GRANT EXECUTE ON FUNCTION public.unfriend_user(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_friend_badges(UUID) TO authenticated;
+
+-- 4. Enable RLS and add SELECT policy for authenticated users on profiles table
+-- This allows friends to view each other's profiles in the app
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Profiles are readable by authenticated users" ON public.profiles;
+CREATE POLICY "Profiles are readable by authenticated users" 
+ON public.profiles 
+FOR SELECT 
+TO authenticated 
+USING (true);
+
+-- 5. Add SELECT policy for authenticated users on activity_logs table
+-- This allows friends to view each other's weekly XP progress curves
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Activity logs are readable by authenticated users" ON public.activity_logs;
+CREATE POLICY "Activity logs are readable by authenticated users" 
+ON public.activity_logs 
+FOR SELECT 
+TO authenticated 
+USING (true);
+
+-- 6. Add SELECT policy for authenticated users on exercise_prs table
+-- This allows friends to view each other's Personal Records
+ALTER TABLE public.exercise_prs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "PRs are readable by authenticated users" ON public.exercise_prs;
+CREATE POLICY "PRs are readable by authenticated users" 
+ON public.exercise_prs 
+FOR SELECT 
+TO authenticated 
+USING (true);
