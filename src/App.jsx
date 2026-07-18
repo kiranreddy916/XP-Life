@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Exercise from './pages/Exercise';
 import WorkoutLogger from './pages/WorkoutLogger';
 import Profile from './pages/Profile';
+import FriendProfile from './pages/FriendProfile';
 import Checklist from './pages/Checklist';
 import Badges from './pages/Badges';
 import PersonalRecords from './pages/PersonalRecords';
@@ -28,6 +29,7 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/add/:code" element={<AddByCode />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/friend-profile/:id" element={<FriendProfile />} />
           <Route path="/badges" element={<Badges />} />
           <Route path="/prs" element={<PersonalRecords />} />
           <Route path="*" element={<Navigate to="/" replace />} />

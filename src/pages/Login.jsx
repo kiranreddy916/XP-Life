@@ -43,6 +43,12 @@ export default function Login() {
       }
 
       if (profile) {
+        // Save/Sync Google OAuth name to profiles table
+        await supabase
+          .from('profiles')
+          .update({ name })
+          .eq('id', userId);
+
         // Existing user — store locally and go home
         localStorage.setItem('user', JSON.stringify({
           name,

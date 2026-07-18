@@ -58,6 +58,9 @@ export default function Onboarding() {
       return;
     }
 
+    // Save the name value to profiles table
+    await supabase.from('profiles').update({ name: formData.name }).eq('id', userId);
+
     const localUser = {
       id: userId,
       name: formData.name,

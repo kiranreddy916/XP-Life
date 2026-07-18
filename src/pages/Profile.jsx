@@ -790,7 +790,12 @@ export default function Profile() {
         </div>
         <div className="horizontal-list">
           {activeFriendStreaks.map(streak => (
-            <div key={streak.streak_id} className="friend-item">
+            <div 
+              key={streak.streak_id} 
+              className="friend-item"
+              onClick={() => navigate(`/friend-profile/${streak.friend_profile_id}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <div 
                 className="friend-circle" 
                 style={{ 
@@ -857,7 +862,13 @@ export default function Profile() {
                 ) : (
                   friendsStreakStatuses.filter(f => f.invite_status === 'pending_received').map(friend => (
                     <div key={friend.friend_profile_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div 
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                        onClick={() => {
+                          setShowStreakModal(false);
+                          navigate(`/friend-profile/${friend.friend_profile_id}`);
+                        }}
+                      >
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
                           {friend.profile_image_url ? (
                             <img src={friend.profile_image_url} alt={friend.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -900,7 +911,13 @@ export default function Profile() {
                 ) : (
                   friendsStreakStatuses.filter(f => f.invite_status === 'none' || f.invite_status === 'pending_sent').map(friend => (
                     <div key={friend.friend_profile_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div 
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                        onClick={() => {
+                          setShowStreakModal(false);
+                          navigate(`/friend-profile/${friend.friend_profile_id}`);
+                        }}
+                      >
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
                           {friend.profile_image_url ? (
                             <img src={friend.profile_image_url} alt={friend.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

@@ -342,7 +342,17 @@ export default function Leaderboard() {
                   </div>
 
                   {/* Center Column: Avatar + Profile */}
-                  <div className="ranking-profile-col">
+                  <div 
+                    className="ranking-profile-col"
+                    onClick={() => {
+                      if (row.is_user) {
+                        navigate('/profile');
+                      } else {
+                        navigate(`/friend-profile/${row.profile_id}`);
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {row.profile_image_url ? (
                       <div 
                         style={{ 
