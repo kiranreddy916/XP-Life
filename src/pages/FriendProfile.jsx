@@ -342,29 +342,46 @@ export default function FriendProfile() {
   const userWeekTotal = userWeeklyXP.reduce((s, x) => s + x, 0);
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '160px', background: 'var(--bg-color)', minHeight: '100vh', position: 'relative' }}>
+    <div className="animate-fade-in" style={{ paddingBottom: '32px', background: 'var(--bg-color)', minHeight: '100vh', position: 'relative' }}>
       
-      {/* Page Header */}
-      <div className="badges-page-header" style={{ borderBottom: 'none', background: 'transparent' }}>
-        <button className="badges-back-btn" onClick={() => navigate(-1)} style={{ color: 'var(--text-primary)', border: 'none', background: 'none', cursor: 'pointer' }}>
-          <ArrowLeft size={22} />
-        </button>
-      </div>
-
-      {/* Profile Section */}
-      <div className="profile-header" style={{ textAlign: 'center', marginTop: '8px' }}>
+      {/* Profile Header */}
+      <div className="profile-header" style={{ textAlign: 'center', paddingTop: '16px', paddingBottom: '16px', position: 'relative' }}>
         
+        {/* Back Button */}
+        <button 
+          className="badges-back-btn" 
+          onClick={() => navigate(-1)} 
+          style={{ 
+            position: 'absolute', 
+            top: '16px', 
+            left: '16px', 
+            color: 'var(--text-primary)', 
+            border: 'none', 
+            background: 'rgba(255,255,255,0.06)', 
+            cursor: 'pointer',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5
+          }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+
         {/* Profile Picture */}
         {friendProfile.profile_image_url ? (
           <div 
             style={{ 
-              width: '120px', 
-              height: '120px', 
+              width: '110px', 
+              height: '110px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '0 auto 12px auto'
+              margin: '8px auto 12px auto'
             }}
           >
             <img 
@@ -378,13 +395,13 @@ export default function FriendProfile() {
         ) : (
           <div 
             style={{ 
-              width: '120px', 
-              height: '120px', 
+              width: '110px', 
+              height: '110px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '0 auto 12px auto',
+              margin: '8px auto 12px auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -401,7 +418,7 @@ export default function FriendProfile() {
         </div>
 
         {/* Display Name */}
-        <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#fff', margin: '4px 0 2px 0' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#fff', margin: '2px 0 2px 0' }}>
           {friendProfile.name || friendProfile.username.replace('@', '')}
         </h2>
 
@@ -412,7 +429,7 @@ export default function FriendProfile() {
       </div>
 
       {/* Friends Actions Button */}
-      <div style={{ padding: '0 24px', marginTop: '24px' }}>
+      <div style={{ padding: '0 20px', marginTop: '16px' }}>
         <button 
           className="btn-primary" 
           onClick={() => setShowUnfriendSheet(true)}
@@ -423,7 +440,7 @@ export default function FriendProfile() {
       </div>
 
       {/* Weekly Progress Section */}
-      <div className="profile-section" style={{ marginTop: '32px' }}>
+      <div className="profile-section" style={{ marginTop: '16px' }}>
         <div className="section-header">
           <h3>Weekly Progress</h3>
         </div>
@@ -512,7 +529,7 @@ export default function FriendProfile() {
       </div>
 
       {/* Friends Overview Section */}
-      <div className="profile-section" style={{ marginTop: '24px' }}>
+      <div className="profile-section" style={{ marginTop: '16px' }}>
         <div className="section-header">
           <h3>Friends Overview</h3>
         </div>
@@ -549,7 +566,7 @@ export default function FriendProfile() {
       </div>
 
       {/* Monthly Badges Section */}
-      <div className="profile-section" style={{ marginTop: '24px' }}>
+      <div className="profile-section" style={{ marginTop: '16px' }}>
         <div className="section-header">
           <h3>Monthly Badges</h3>
         </div>
@@ -580,7 +597,7 @@ export default function FriendProfile() {
       </div>
 
       {/* Achievements Section */}
-      <div className="profile-section" style={{ marginTop: '24px' }}>
+      <div className="profile-section" style={{ marginTop: '16px' }}>
         <div className="section-header">
           <h3>Achievements</h3>
         </div>
