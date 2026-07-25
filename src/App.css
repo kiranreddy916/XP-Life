@@ -5,6 +5,10 @@
   padding-top: env(safe-area-inset-top);
 }
 
+.app-layout.profile-page-layout {
+  padding-top: 0;
+}
+
 /* Avatar styling */
 .avatar-container {
   display: flex;
