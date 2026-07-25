@@ -663,8 +663,8 @@ export default function Profile() {
       )}
 
       {/* Header Section */}
-      <div className="profile-header" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
-        <button className="settings-btn" onClick={() => setShowSettings(true)} style={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }}>
+      <div className="profile-header" style={{ paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))', paddingBottom: '12px' }}>
+        <button className="settings-btn" onClick={() => setShowSettings(true)} style={{ top: 'calc(8px + env(safe-area-inset-top, 0px))' }}>
           <Settings size={24} />
         </button>
         
@@ -672,8 +672,8 @@ export default function Profile() {
         {profile.profile_image_url ? (
           <div 
             style={{ 
-              width: '120px', 
-              height: '120px', 
+              width: '100px', 
+              height: '100px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
@@ -692,8 +692,8 @@ export default function Profile() {
         ) : (
           <div 
             style={{ 
-              width: '120px', 
-              height: '120px', 
+              width: '100px', 
+              height: '100px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
@@ -705,7 +705,7 @@ export default function Profile() {
               backgroundColor: 'rgba(255,255,255,0.05)'
             }}
           >
-            <User size={50} color="var(--text-secondary)" />
+            <User size={46} color="var(--text-secondary)" />
           </div>
         )}
 

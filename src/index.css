@@ -349,12 +349,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Profile Page Styles */
 .profile-header {
-  padding: 24px 20px 16px;
+  padding: 16px 20px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  background: radial-gradient(circle at 50% 35%, rgba(102, 252, 241, 0.14) 0%, rgba(102, 252, 241, 0.03) 50%, transparent 75%);
+  background: radial-gradient(circle at 50% 0%, rgba(102, 252, 241, 0.15) 0%, rgba(102, 252, 241, 0.03) 50%, transparent 80%);
 }
 
 .settings-btn {

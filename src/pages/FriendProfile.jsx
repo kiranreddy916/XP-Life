@@ -345,7 +345,7 @@ export default function FriendProfile() {
     <div className="animate-fade-in" style={{ paddingBottom: '32px', background: 'var(--bg-color)', minHeight: '100vh', position: 'relative' }}>
       
       {/* Profile Header */}
-      <div className="profile-header" style={{ textAlign: 'center', paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))', paddingBottom: '16px', position: 'relative' }}>
+      <div className="profile-header" style={{ textAlign: 'center', paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))', paddingBottom: '12px', position: 'relative' }}>
         
         {/* Back Button */}
         <button 
@@ -353,7 +353,7 @@ export default function FriendProfile() {
           onClick={() => navigate(-1)} 
           style={{ 
             position: 'absolute', 
-            top: 'calc(16px + env(safe-area-inset-top, 0px))', 
+            top: 'calc(8px + env(safe-area-inset-top, 0px))', 
             left: '16px', 
             color: 'var(--text-primary)', 
             border: 'none', 
@@ -375,13 +375,13 @@ export default function FriendProfile() {
         {friendProfile.profile_image_url ? (
           <div 
             style={{ 
-              width: '110px', 
-              height: '110px', 
+              width: '100px', 
+              height: '100px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '8px auto 12px auto'
+              margin: '0 auto 8px auto'
             }}
           >
             <img 
@@ -395,20 +395,20 @@ export default function FriendProfile() {
         ) : (
           <div 
             style={{ 
-              width: '110px', 
-              height: '110px', 
+              width: '100px', 
+              height: '100px', 
               borderRadius: '50%', 
               overflow: 'hidden', 
               border: '2px solid var(--accent-cyan)',
               boxShadow: '0 4px 15px rgba(102, 252, 241, 0.2)',
-              margin: '8px auto 12px auto',
+              margin: '0 auto 8px auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'rgba(255,255,255,0.05)'
             }}
           >
-            <User size={50} color="var(--text-secondary)" />
+            <User size={46} color="var(--text-secondary)" />
           </div>
         )}
 
