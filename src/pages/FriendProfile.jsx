@@ -345,7 +345,7 @@ export default function FriendProfile() {
     <div className="animate-fade-in" style={{ paddingBottom: '32px', background: 'var(--bg-color)', minHeight: '100vh', position: 'relative' }}>
       
       {/* Profile Header */}
-      <div className="profile-header" style={{ textAlign: 'center', paddingTop: '16px', paddingBottom: '16px', position: 'relative' }}>
+      <div className="profile-header" style={{ textAlign: 'center', paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))', paddingBottom: '16px', position: 'relative' }}>
         
         {/* Back Button */}
         <button 
@@ -353,7 +353,7 @@ export default function FriendProfile() {
           onClick={() => navigate(-1)} 
           style={{ 
             position: 'absolute', 
-            top: '16px', 
+            top: 'calc(16px + env(safe-area-inset-top, 0px))', 
             left: '16px', 
             color: 'var(--text-primary)', 
             border: 'none', 

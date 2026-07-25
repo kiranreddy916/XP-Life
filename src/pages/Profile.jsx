@@ -663,8 +663,8 @@ export default function Profile() {
       )}
 
       {/* Header Section */}
-      <div className="profile-header">
-        <button className="settings-btn" onClick={() => setShowSettings(true)}>
+      <div className="profile-header" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
+        <button className="settings-btn" onClick={() => setShowSettings(true)} style={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }}>
           <Settings size={24} />
         </button>
         
