@@ -348,7 +348,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   align-items: center;
   position: relative;
-  background: radial-gradient(circle at 50% 0%, rgba(102, 252, 241, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 35%, rgba(102, 252, 241, 0.14) 0%, rgba(102, 252, 241, 0.03) 50%, transparent 75%);
 }
 
 .settings-btn {

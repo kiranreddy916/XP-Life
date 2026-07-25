@@ -35,9 +35,9 @@ export default function Profile() {
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Lock body scroll when any modal is open
+  // Lock body scroll when any modal is open (excluding full-page edit view)
   useEffect(() => {
-    if (showStreakModal || showSettings || showCameraModal || isEditing) {
+    if (showStreakModal || showSettings || showCameraModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -45,7 +45,7 @@ export default function Profile() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showStreakModal, showSettings, showCameraModal, isEditing]);
+  }, [showStreakModal, showSettings, showCameraModal]);
   // Handle file upload to Supabase Storage
   const handleFileUpload = async (file) => {
     if (!file) return;
@@ -391,7 +391,7 @@ export default function Profile() {
   // === EDIT PROFILE VIEW ===
   if (isEditing) {
     return (
-      <div className="container center-content animate-fade-in" style={{ paddingBottom: '100px', paddingTop: '40px' }}>
+      <div className="container animate-fade-in" style={{ paddingBottom: '120px', paddingTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '24px', margin: 0 }}>Edit Profile</h2>
