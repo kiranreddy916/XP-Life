@@ -3,22 +3,34 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Prevent native browser edge-swipe back/forward history navigation on iOS and Android
+// Project-wide prevention of browser back/forward edge-swipe navigation on iOS & Android
+let startX = 0;
+let startY = 0;
 let isEdgeTouch = false;
 
 window.addEventListener('touchstart', (e) => {
   if (e.touches && e.touches.length > 0) {
-    const touchX = e.touches[0].clientX;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
     const screenWidth = window.innerWidth;
-    // If touch originates within 35px of left or right edge of screen
-    isEdgeTouch = touchX < 35 || touchX > screenWidth - 35;
+    // Detect touches starting within 50px of left or right screen edges
+    isEdgeTouch = startX <= 50 || startX >= screenWidth - 50;
   }
-}, { passive: true });
+}, { passive: false });
 
 window.addEventListener('touchmove', (e) => {
-  if (isEdgeTouch) {
-    // Cancel native browser edge-swipe gesture
-    e.preventDefault();
+  if (e.touches && e.touches.length > 0) {
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - startX;
+    const deltaY = Math.abs(currentY - startY);
+
+    // Cancel browser native edge swipe back/forward page navigation on iOS Safari and Android
+    if (isEdgeTouch && (deltaX > 2 || Math.abs(deltaX) > deltaY)) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    }
   }
 }, { passive: false });
 
