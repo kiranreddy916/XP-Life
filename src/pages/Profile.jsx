@@ -152,6 +152,12 @@ export default function Profile() {
         const date = new Date(user.created_at);
         if (isMounted) setJoinedDate(date.getFullYear().toString());
 
+        const clientDate = getLocalDateStr();
+        // Sync/refresh the user's personal streak first in database
+        await supabase.rpc('sync_user_streak', { p_client_date: clientDate }).catch(err => {
+          console.error("Failed to sync personal streak in Profile:", err);
+        });
+
         const { data, error } = await supabase
           .from('profiles')
           .select('*')

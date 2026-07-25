@@ -312,6 +312,16 @@ export default function Home() {
       try {
         const { data: { session } } = await withTimeout(supabase.auth.getSession(), 4500);
         if (session?.user) {
+          const todayStr = formatDate(new Date());
+          
+          // Sync/refresh the user's personal streak in database
+          await withTimeout(
+            supabase.rpc('sync_user_streak', { p_client_date: todayStr }),
+            3000
+          ).catch(err => {
+            console.error("Failed to sync personal streak:", err);
+          });
+
           // Fetch Profile
           const { data, error } = await withTimeout(
             supabase
