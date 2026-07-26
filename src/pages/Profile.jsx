@@ -181,6 +181,7 @@ export default function Profile() {
         }
       } catch (err) {
         console.error("Error loading profile:", err);
+        alert("Error loading profile: " + err.message + "\nStack: " + err.stack);
         if (isMounted) navigate('/', { replace: true });
       }
     };
