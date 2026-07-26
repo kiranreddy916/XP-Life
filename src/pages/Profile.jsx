@@ -402,7 +402,7 @@ export default function Profile() {
   // === EDIT PROFILE VIEW ===
   if (isEditing) {
     return (
-      <div className="container animate-fade-in" style={{ paddingBottom: '120px', paddingTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      <div className="container animate-fade-in" style={{ paddingBottom: '120px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '24px', margin: 0 }}>Edit Profile</h2>
@@ -674,8 +674,8 @@ export default function Profile() {
       )}
 
       {/* Header Section */}
-      <div className="profile-header" style={{ paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))', paddingBottom: '12px' }}>
-        <button className="settings-btn" onClick={() => setShowSettings(true)} style={{ top: 'calc(8px + env(safe-area-inset-top, 0px))' }}>
+      <div className="profile-header" style={{ paddingTop: 'calc(28px + env(safe-area-inset-top, 0px))', paddingBottom: '12px' }}>
+        <button className="settings-btn" onClick={() => setShowSettings(true)} style={{ top: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
           <Settings size={24} />
         </button>
         
