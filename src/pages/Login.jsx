@@ -27,7 +27,7 @@ export default function Login() {
       const { data: profile, error } = await withTimeout(
         supabase
           .from('profiles')
-          .select('id, username, gender')
+          .select('id, username, gender, name')
           .eq('id', userId)
           .maybeSingle(),
         4500
@@ -43,20 +43,25 @@ export default function Login() {
       }
 
       if (profile) {
-        // Save/Sync Google OAuth name to profiles table
-        await supabase
-          .from('profiles')
-          .update({ name })
-          .eq('id', userId);
+        // Use user-given name from onboarding if it exists, otherwise fall back to Google OAuth name
+        const displayName = profile.name || name;
+
+        // Only sync/initialize Google name if profiles table name is empty
+        if (!profile.name) {
+          await supabase
+            .from('profiles')
+            .update({ name })
+            .eq('id', userId);
+        }
 
         // Existing user — store locally and go home
         localStorage.setItem('user', JSON.stringify({
-          name,
+          name: displayName,
           username: profile.username ? `@${profile.username}` : `@${session.user.email.split('@')[0]}`,
           id: userId,
           gender: profile.gender
         }));
-        navigate('/home', { state: { isLogin: true, isNew: false, name }, replace: true });
+        navigate('/home', { state: { isLogin: true, isNew: false, name: displayName }, replace: true });
       } else {
         // New user — send to onboarding with their Google name
         navigate('/onboarding', {
