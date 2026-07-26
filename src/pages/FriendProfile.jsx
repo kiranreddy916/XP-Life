@@ -652,24 +652,27 @@ export default function FriendProfile() {
       {/* Friends Actions Sheet Overlay */}
       {showUnfriendSheet && (
         <div className="modal-overlay" onClick={() => setShowUnfriendSheet(false)} style={{ zIndex: 999 }}>
-          <div className="settings-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '380px', borderRadius: '24px 24px 0 0', position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', animation: 'slideUp 0.3s ease-out' }}>
-            <div className="modal-header" style={{ marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '18px', margin: 0, fontWeight: '800' }}>Manage Friend</h2>
-              <button className="close-modal" onClick={() => setShowUnfriendSheet(false)}>
-                <X size={20} />
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '320px', borderRadius: '24px', padding: '24px', margin: 'auto' }}>
+            <div className="modal-header" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '18px', margin: 0, fontWeight: '800', color: '#fff' }}>Manage Friend</h2>
+              <button className="close-modal" onClick={() => setShowUnfriendSheet(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-secondary)', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <X size={16} />
               </button>
             </div>
             <button 
               className="settings-option danger" 
-              onClick={() => setShowConfirmDialog(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', padding: '16px', borderRadius: '12px', width: '100%', background: 'rgba(255, 75, 75, 0.05)', color: 'var(--accent-red)', border: '1px solid rgba(255, 75, 75, 0.1)', cursor: 'pointer' }}
+              onClick={() => {
+                setShowUnfriendSheet(false);
+                setShowConfirmDialog(true);
+              }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: '600', padding: '14px', borderRadius: '12px', width: '100%', background: 'rgba(255, 75, 75, 0.1)', color: 'var(--accent-red)', border: '1px solid rgba(255, 75, 75, 0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
             >
               Unfriend
             </button>
             <button 
               className="settings-option" 
               onClick={() => setShowUnfriendSheet(false)}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', padding: '16px', borderRadius: '12px', width: '100%', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', marginTop: '8px', cursor: 'pointer', justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: '600', padding: '14px', borderRadius: '12px', width: '100%', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-primary)', marginTop: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
             >
               Cancel
             </button>
