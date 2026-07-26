@@ -162,9 +162,14 @@ export default function Profile() {
 
         const clientDate = getLocalDateStr();
         // Sync/refresh the user's personal streak first in database
-        await supabase.rpc('sync_user_streak', { p_client_date: clientDate }).catch(err => {
-          console.error("Failed to sync personal streak in Profile:", err);
-        });
+        try {
+          const { error: rpcError } = await supabase.rpc('sync_user_streak', { p_client_date: clientDate });
+          if (rpcError) {
+            console.error("Failed to sync personal streak in Profile:", rpcError);
+          }
+        } catch (err) {
+          console.error("Exception syncing personal streak in Profile:", err);
+        }
 
         const { data, error } = await supabase
           .from('profiles')
@@ -181,7 +186,6 @@ export default function Profile() {
         }
       } catch (err) {
         console.error("Error loading profile:", err);
-        alert("Error loading profile: " + err.message + "\nStack: " + err.stack);
         if (isMounted) navigate('/', { replace: true });
       }
     };
