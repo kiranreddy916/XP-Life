@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
+const getLocalDateStr = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const date = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export default function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
@@ -211,14 +219,6 @@ export default function Profile() {
     };
     fetchBadges();
   }, []);
-
-  const getLocalDateStr = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const date = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${date}`;
-  };
 
   const fetchStreakData = async () => {
     try {
