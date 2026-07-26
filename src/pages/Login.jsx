@@ -43,8 +43,8 @@ export default function Login() {
       }
 
       if (profile) {
-        // Use user-given name from onboarding if it exists, otherwise fall back to Google OAuth name
-        const displayName = profile.name || name;
+        // Use user-given username from onboarding if it exists, otherwise fall back to Google OAuth name
+        const displayName = profile.username || name;
 
         // Only sync/initialize Google name if profiles table name is empty
         if (!profile.name) {
