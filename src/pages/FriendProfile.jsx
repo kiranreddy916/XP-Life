@@ -1,7 +1,7 @@
 // Dummy trigger commit to force Vercel rebuild and deploy latest updates
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X, Calendar } from 'lucide-react';
+import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function FriendProfile() {
