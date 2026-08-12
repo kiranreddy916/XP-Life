@@ -621,53 +621,23 @@ export default function FriendProfile() {
         )}
       </div>
 
-      {/* Achievements Section */}
+      {/* Personal Records Section */}
       <div className="profile-section" style={{ marginTop: '16px' }}>
         <div className="section-header">
-          <h3>Achievements</h3>
+          <h3>Personal Records</h3>
         </div>
-        {unlockedAchievements.length === 0 ? (
+        {friendPRs.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', padding: '12px 0', fontSize: '13px', textAlign: 'center', width: '100%' }}>
-            No achievements unlocked yet.
+            No records logged yet.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-            {unlockedAchievements.map(ach => (
-              <div 
-                key={ach.id} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '14px', 
-                  padding: '12px 16px', 
-                  background: 'rgba(255,255,255,0.02)', 
-                  borderRadius: '16px', 
-                  border: '1px solid rgba(255,255,255,0.05)' 
-                }}
-              >
-                <div 
-                  style={{ 
-                    width: '48px', 
-                    height: '48px', 
-                    borderRadius: '12px', 
-                    background: 'rgba(102, 252, 241, 0.05)', 
-                    border: '1px solid rgba(102, 252, 241, 0.1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center' 
-                  }}
-                >
-                  {ach.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{ach.title}</h4>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{ach.date}</span>
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0', lineHeight: '1.4' }}>
-                    {ach.description}
-                  </p>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+            {friendPRs.map((pr) => (
+              <div key={pr.exercise_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{pr.exercise_name}</span>
+                <span style={{ color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 700 }}>
+                  {pr.best_weight} kg × {pr.best_reps} reps
+                </span>
               </div>
             ))}
           </div>
