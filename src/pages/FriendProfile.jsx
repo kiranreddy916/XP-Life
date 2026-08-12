@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// Dummy trigger commit to force Vercel rebuild and deploy latest updates
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
