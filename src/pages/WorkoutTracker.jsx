@@ -86,6 +86,22 @@ export default function WorkoutTracker() {
     initTracker();
   }, [friendId, navigate]);
 
+  // Lock body scroll when popup is active
+  useEffect(() => {
+    if (selectedDay) {
+      document.body.style.overflow = 'hidden';
+      // Fallback lock for iOS Safari standalone/PWA scroll
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [selectedDay]);
+
   // Click handler for calendar days
   const handleDayClick = async (dateStr, statusClass, dayNum, monthName) => {
     if (!statusClass) return; // Future day with no status: do nothing
@@ -437,7 +453,9 @@ export default function WorkoutTracker() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
                 <div style={{ fontSize: '36px' }}>✗</div>
                 <p style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: '1.5' }}>
-                  Workout is not done.
+                  {friendId 
+                    ? `@${profile?.username?.replace('@', '')} did not do a workout.` 
+                    : 'You did not do a workout.'}
                 </p>
               </div>
             )}
