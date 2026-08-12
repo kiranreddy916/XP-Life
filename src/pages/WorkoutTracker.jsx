@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, Flame, Trophy, Calendar } from 'lucide-react';
+import { ArrowLeft, Zap, Flame, Trophy, Calendar, X, Dumbbell } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function WorkoutTracker() {
@@ -12,6 +12,11 @@ export default function WorkoutTracker() {
   const [profile, setProfile] = useState(null);
   const [logs, setLogs] = useState({});
   const [targetUserId, setTargetUserId] = useState(null);
+
+  // States for interactive day modal
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [workoutDetails, setWorkoutDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Helper to format date in YYYY-MM-DD local format
   const getLocalDateStr = (d = new Date()) => {
@@ -80,6 +85,53 @@ export default function WorkoutTracker() {
 
     initTracker();
   }, [friendId, navigate]);
+
+  // Click handler for calendar days
+  const handleDayClick = async (dateStr, statusClass, dayNum, monthName) => {
+    if (!statusClass) return; // Future day with no status: do nothing
+    
+    setSelectedDay({ dateStr, statusClass, dayNum, monthName });
+    
+    if (statusClass === 'active-green') {
+      try {
+        setLoadingDetails(true);
+        setWorkoutDetails(null);
+        
+        // 1. Fetch activity log for the XP earned
+        const { data: log, error: logErr } = await supabase
+          .from('activity_logs')
+          .select('id, xp_earned')
+          .eq('user_id', targetUserId)
+          .eq('activity_date', dateStr)
+          .eq('activity_type', 'workout')
+          .maybeSingle();
+          
+        if (logErr) throw logErr;
+        
+        if (!log) {
+          setWorkoutDetails({ xp: 30, exercises: [] });
+          return;
+        }
+
+        // 2. Fetch workout exercises details
+        const { data: exercisesData, error: exercisesErr } = await supabase
+          .from('workout_exercises')
+          .select('exercise_name, sets')
+          .eq('activity_log_id', log.id);
+          
+        if (exercisesErr) throw exercisesErr;
+        
+        setWorkoutDetails({
+          xp: log.xp_earned || 30,
+          exercises: exercisesData || []
+        });
+      } catch (err) {
+        console.error("Error loading day workout details:", err);
+      } finally {
+        setLoadingDetails(false);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -173,7 +225,7 @@ export default function WorkoutTracker() {
         </div>
 
         {/* Render Months */}
-        {monthsToRender.map(({ year, month, name }) => {
+        {monthsToRender.map(({ year, month, name: monthName }) => {
           // Number of days in the month
           const daysInMonth = new Date(year, month + 1, 0).getDate();
           
@@ -193,10 +245,10 @@ export default function WorkoutTracker() {
           }
 
           return (
-            <div className="glass-panel" key={name} style={{ padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="glass-panel" key={monthName} style={{ padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
               {/* Month Header */}
               <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                {name}
+                {monthName}
               </h3>
 
               {/* Grid Layout */}
@@ -243,6 +295,7 @@ export default function WorkoutTracker() {
                     <div 
                       key={`day-${dayNum}`}
                       className={`day-circle ${statusClass}`}
+                      onClick={() => handleDayClick(dateStr, statusClass, dayNum, monthName)}
                       style={{ 
                         width: '100%', 
                         aspectRatio: '1 / 1', 
@@ -255,7 +308,8 @@ export default function WorkoutTracker() {
                         borderRadius: '50%',
                         border: statusClass ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
                         background: statusClass ? undefined : 'transparent',
-                        color: statusClass ? undefined : 'var(--text-secondary)'
+                        color: statusClass ? undefined : 'var(--text-secondary)',
+                        cursor: statusClass ? 'pointer' : 'default'
                       }}
                     >
                       {dayNum}
@@ -267,6 +321,147 @@ export default function WorkoutTracker() {
           );
         })}
       </div>
+
+      {/* Interactive Day Details Modal */}
+      {selectedDay && (
+        <div className="modal-overlay" onClick={() => setSelectedDay(null)} style={{ zIndex: 2000 }}>
+          <div 
+            className="settings-modal animate-slide-up" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '360px', 
+              borderRadius: '24px', 
+              padding: '24px', 
+              margin: 'auto',
+              border: '1px solid var(--glass-border)',
+              background: '#1a1f2b'
+            }}
+          >
+            <div className="modal-header" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {selectedDay.monthName.split(' ')[0]} {selectedDay.dayNum}, 2026
+                </span>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#fff', margin: '2px 0 0 0' }}>
+                  {selectedDay.statusClass === 'active-green' && 'Workout Day'}
+                  {selectedDay.statusClass === 'active-cyan' && 'Rest Day'}
+                  {selectedDay.statusClass === 'active-red' && 'Missed Day'}
+                  {selectedDay.statusClass === 'past-inactive' && 'Pre-Account'}
+                </h3>
+              </div>
+              <button 
+                className="close-modal" 
+                onClick={() => setSelectedDay(null)} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: 'none', 
+                  color: 'var(--text-secondary)', 
+                  width: '30px', 
+                  height: '30px', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  cursor: 'pointer' 
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Content for GREEN - WORKOUT */}
+            {selectedDay.statusClass === 'active-green' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {loadingDetails ? (
+                  <div style={{ color: 'var(--accent-cyan)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                    Loading exercises...
+                  </div>
+                ) : workoutDetails ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(57, 255, 20, 0.06)', border: '1px solid rgba(57, 255, 20, 0.15)', padding: '10px 14px', borderRadius: '12px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#39ff14' }}>Workout Logged</span>
+                      <span style={{ fontSize: '12px', fontWeight: '800', background: 'rgba(57, 255, 20, 0.15)', color: '#39ff14', padding: '3px 8px', borderRadius: '10px' }}>
+                        +{workoutDetails.xp} XP
+                      </span>
+                    </div>
+
+                    <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+                      {workoutDetails.exercises.length === 0 ? (
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', fontStyle: 'italic' }}>
+                          No exercises recorded.
+                        </div>
+                      ) : (
+                        workoutDetails.exercises.map((ex, exIdx) => (
+                          <div key={exIdx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>
+                              <Dumbbell size={14} color="var(--accent-cyan)" />
+                              {ex.exercise_name}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {Array.isArray(ex.sets) && ex.sets.map((set, sIdx) => (
+                                <div key={sIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 8px', background: 'rgba(255,255,255,0.01)', borderRadius: '6px' }}>
+                                  <span>Set {sIdx + 1}</span>
+                                  <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+                                    {set.weight} kg × {set.reps} reps
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
+                    Failed to fetch workout details.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Content for CYAN - REST */}
+            {selectedDay.statusClass === 'active-cyan' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+                <div style={{ fontSize: '36px' }}>😴</div>
+                <p style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: '1.5' }}>
+                  {friendId 
+                    ? `@${profile?.username?.replace('@', '')} has taken the rest day.` 
+                    : 'You have taken the rest day.'}
+                </p>
+              </div>
+            )}
+
+            {/* Content for RED - MISSED */}
+            {selectedDay.statusClass === 'active-red' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+                <div style={{ fontSize: '36px' }}>✗</div>
+                <p style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: '1.5' }}>
+                  Workout is not done.
+                </p>
+              </div>
+            )}
+
+            {/* Content for pre-account days */}
+            {selectedDay.statusClass === 'past-inactive' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+                <div style={{ fontSize: '36px' }}>🔒</div>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
+                  This date is before the account was created.
+                </p>
+              </div>
+            )}
+
+            <button 
+              className="btn-primary" 
+              onClick={() => setSelectedDay(null)}
+              style={{ width: '100%', height: '40px', fontSize: '13px', marginTop: '20px', fontWeight: '700' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
