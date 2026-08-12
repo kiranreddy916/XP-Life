@@ -52,12 +52,12 @@ export default function WorkoutTracker() {
         if (profileErr) throw profileErr;
         setProfile(profileData);
 
-        // Fetch activity logs from April 1, 2026 to August 31, 2026
+        // Fetch activity logs from May 1, 2026 to August 31, 2026
         const { data: logsData, error: logsErr } = await supabase
           .from('activity_logs')
           .select('activity_date, activity_type')
           .eq('user_id', uid)
-          .gte('activity_date', '2026-04-01')
+          .gte('activity_date', '2026-05-01')
           .lte('activity_date', '2026-08-31');
 
         if (logsErr) throw logsErr;
@@ -104,7 +104,7 @@ export default function WorkoutTracker() {
 
   // Click handler for calendar days
   const handleDayClick = async (dateStr, statusClass, dayNum, monthName) => {
-    if (!statusClass) return; // Future day with no status: do nothing
+    if (!statusClass) return; // Future/pre-account days: do nothing
     
     setSelectedDay({ dateStr, statusClass, dayNum, monthName });
     
@@ -160,13 +160,12 @@ export default function WorkoutTracker() {
   // Account creation date for graying out before account was made
   const accountCreatedDateStr = profile?.created_at ? getLocalDateStr(new Date(profile.created_at)) : null;
 
-  // Calendar months to display (August 2026 down to April 2026)
+  // Calendar months to display (August 2026 down to May 2026)
   const monthsToRender = [
     { year: 2026, month: 7, name: 'August 2026' },  // Month index 7 is August
     { year: 2026, month: 6, name: 'July 2026' },
     { year: 2026, month: 5, name: 'June 2026' },
-    { year: 2026, month: 4, name: 'May 2026' },
-    { year: 2026, month: 3, name: 'April 2026' }
+    { year: 2026, month: 4, name: 'May 2026' }
   ];
 
   const weekdayHeaders = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -234,8 +233,8 @@ export default function WorkoutTracker() {
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>Missed Day</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="day-circle past-inactive" style={{ width: '24px', height: '24px', fontSize: '10px' }} />
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Pre-Account</span>
+              <div className="day-circle" style={{ width: '24px', height: '24px', background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.2)' }} />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Yet to Come</span>
             </div>
           </div>
         </div>
@@ -300,7 +299,7 @@ export default function WorkoutTracker() {
                     } else {
                       // Check if it's before account creation
                       if (accountCreatedDateStr && dateStr < accountCreatedDateStr) {
-                        statusClass = 'past-inactive';
+                        statusClass = ''; // Pre-account days show as empty outline circles
                       } else {
                         statusClass = 'active-red'; // Missed day
                       }
@@ -362,7 +361,6 @@ export default function WorkoutTracker() {
                   {selectedDay.statusClass === 'active-green' && 'Workout Day'}
                   {selectedDay.statusClass === 'active-cyan' && 'Rest Day'}
                   {selectedDay.statusClass === 'active-red' && 'Missed Day'}
-                  {selectedDay.statusClass === 'past-inactive' && 'Pre-Account'}
                 </h3>
               </div>
               <button 
@@ -456,16 +454,6 @@ export default function WorkoutTracker() {
                   {friendId 
                     ? `@${profile?.username?.replace('@', '')} did not do a workout.` 
                     : 'You did not do a workout.'}
-                </p>
-              </div>
-            )}
-
-            {/* Content for pre-account days */}
-            {selectedDay.statusClass === 'past-inactive' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
-                <div style={{ fontSize: '36px' }}>🔒</div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
-                  This date is before the account was created.
                 </p>
               </div>
             )}
