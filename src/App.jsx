@@ -12,12 +12,13 @@ import Badges from './pages/Badges';
 import PersonalRecords from './pages/PersonalRecords';
 import Leaderboard from './pages/Leaderboard';
 import AddByCode from './pages/AddByCode';
+import WorkoutTracker from './pages/WorkoutTracker';
 import BottomNav from './components/BottomNav';
 import './App.css';
 
 function AppContent() {
   const location = useLocation();
-  const isProfilePage = location.pathname.startsWith('/profile') || location.pathname.startsWith('/friend-profile');
+  const isProfilePage = location.pathname.startsWith('/profile') || location.pathname.startsWith('/friend-profile') || location.pathname.startsWith('/workout-tracker');
 
   return (
     <div className={`app-layout ${isProfilePage ? 'profile-page-layout' : ''}`}>
@@ -32,6 +33,7 @@ function AppContent() {
         <Route path="/add/:code" element={<AddByCode />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/friend-profile/:id" element={<FriendProfile />} />
+        <Route path="/workout-tracker" element={<WorkoutTracker />} />
         <Route path="/badges" element={<Badges />} />
         <Route path="/prs" element={<PersonalRecords />} />
         <Route path="*" element={<Navigate to="/" replace />} />

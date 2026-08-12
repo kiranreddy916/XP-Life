@@ -1,7 +1,7 @@
 // Dummy trigger commit to force Vercel rebuild and deploy latest updates
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X } from 'lucide-react';
+import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function FriendProfile() {
@@ -564,6 +564,30 @@ export default function FriendProfile() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Workout Tracker Navigation Button */}
+      <div style={{ padding: '0 20px', marginTop: '8px', marginBottom: '16px' }}>
+        <button 
+          className="btn-primary" 
+          onClick={() => navigate(`/workout-tracker?friendId=${friendId}`)}
+          style={{ 
+            width: '100%', 
+            fontWeight: '700', 
+            letterSpacing: '0.05em', 
+            textTransform: 'uppercase', 
+            height: '46px', 
+            fontSize: '13px', 
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <Calendar size={18} />
+          Workout Tracker
+        </button>
       </div>
 
       {/* Monthly Badges Section */}

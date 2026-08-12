@@ -5,9 +5,9 @@ import { Home, Dumbbell, Trophy, User, CheckSquare } from 'lucide-react';
 export default function BottomNav() {
   const location = useLocation();
   
-  // Don't show nav on login, onboarding, workout-logger, or friend-profile screens
-  const hideOn = ['/', '/onboarding', '/workout-logger'];
-  const shouldHide = hideOn.includes(location.pathname) || location.pathname.startsWith('/friend-profile');
+  // Don't show nav on login, onboarding, workout-logger, friend-profile, or workout-tracker screens
+  const hideOn = ['/', '/onboarding', '/workout-logger', '/workout-tracker'];
+  const shouldHide = hideOn.includes(location.pathname) || location.pathname.startsWith('/friend-profile') || location.pathname.startsWith('/workout-tracker');
   if (shouldHide) {
     return null;
   }

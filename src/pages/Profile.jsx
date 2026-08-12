@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User } from 'lucide-react';
+import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const getLocalDateStr = () => {
@@ -770,6 +770,31 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Workout Tracker Navigation Button */}
+      <div style={{ padding: '0 20px', marginTop: '8px', marginBottom: '16px' }}>
+        <button 
+          className="btn-primary" 
+          onClick={() => navigate('/workout-tracker')}
+          style={{ 
+            width: '100%', 
+            fontWeight: '700', 
+            letterSpacing: '0.05em', 
+            textTransform: 'uppercase', 
+            height: '46px', 
+            fontSize: '13px', 
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <Calendar size={18} />
+          Workout Tracker
+        </button>
+      </div>
+
       {/* Friend Streaks Section */}
       <div className="profile-section">
         <div className="section-header">
