@@ -305,25 +305,48 @@ export default function FriendProfile() {
   const chartWidth = 500;
   const chartHeight = 150;
   const chartPadding = 20;
+
+  // Calculate cumulative progression arrays
+  const getCumulativeXP = (xpArray) => {
+    let currentSum = 0;
+    return xpArray.map(xp => {
+      currentSum += xp;
+      return currentSum;
+    });
+  };
+
+  const friendCumulative = getCumulativeXP(friendWeeklyXP);
+  const userCumulative = getCumulativeXP(userWeeklyXP);
   
-  // Calculate max XP in weekly data for scaling (minimum max of 100)
-  const maxWeeklyXP = Math.max(...friendWeeklyXP, ...userWeeklyXP, 100);
+  // Calculate max XP in weekly cumulative data for scaling (minimum max of 100)
+  const maxWeeklyXP = Math.max(...friendCumulative, ...userCumulative, 100);
 
   // Generate SVG Points for lines
-  const getSvgPoints = (xpArray) => {
-    return xpArray.map((xp, index) => {
+  const getSvgPoints = (cumulativeArray) => {
+    return cumulativeArray.map((xp, index) => {
       const x = chartPadding + (index * (chartWidth - chartPadding * 2)) / 6;
       const y = chartHeight - chartPadding - (xp / maxWeeklyXP) * (chartHeight - chartPadding * 2);
       return { x, y };
     });
   };
 
-  const friendPoints = getSvgPoints(friendWeeklyXP);
-  const userPoints = getSvgPoints(userWeeklyXP);
+  const friendPoints = getSvgPoints(friendCumulative);
+  const userPoints = getSvgPoints(userCumulative);
 
+  // Smooth bezier curve path string generator
   const getPointsPathStr = (points) => {
     if (points.length === 0) return '';
-    return `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+    let path = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cpX1 = p0.x + (p1.x - p0.x) / 2;
+      const cpY1 = p0.y;
+      const cpX2 = p0.x + (p1.x - p0.x) / 2;
+      const cpY2 = p1.y;
+      path += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
+    }
+    return path;
   };
 
   const getAreaPathStr = (points) => {
@@ -455,8 +478,8 @@ export default function FriendProfile() {
                 <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0"/>
               </linearGradient>
               <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.15)" stopOpacity="0.15"/>
-                <stop offset="100%" stopColor="rgba(255,255,255,0.15)" stopOpacity="0"/>
+                <stop offset="0%" stopColor="#39ff14" stopOpacity="0.25"/>
+                <stop offset="100%" stopColor="#39ff14" stopOpacity="0"/>
               </linearGradient>
             </defs>
 
@@ -481,9 +504,9 @@ export default function FriendProfile() {
             {userPoints.length > 0 && (
               <>
                 <path d={userAreaStr} fill="url(#userGrad)" />
-                <path d={userPathStr} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeDasharray="3 3" />
+                <path d={userPathStr} fill="none" stroke="#39ff14" strokeWidth="3" />
                 {userPoints.map((p, idx) => (
-                  <circle key={idx} cx={p.x} cy={p.y} r="3" fill="rgba(255,255,255,0.3)" />
+                  <circle key={idx} cx={p.x} cy={p.y} r="4" fill="var(--bg-color)" stroke="#39ff14" strokeWidth="2" />
                 ))}
               </>
             )}
@@ -494,7 +517,7 @@ export default function FriendProfile() {
                 <path d={friendAreaStr} fill="url(#friendGrad)" />
                 <path d={friendPathStr} fill="none" stroke="var(--accent-cyan)" strokeWidth="3" />
                 {friendPoints.map((p, idx) => (
-                  <circle key={idx} cx={p.x} cy={p.y} r="5" fill="var(--bg-color)" stroke="var(--accent-cyan)" strokeWidth="2" />
+                  <circle key={idx} cx={p.x} cy={p.y} r="4" fill="var(--bg-color)" stroke="var(--accent-cyan)" strokeWidth="2" />
                 ))}
               </>
             )}
@@ -514,14 +537,14 @@ export default function FriendProfile() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-cyan)' }} />
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-cyan)' }} />
               <span style={{ fontWeight: 600, color: '#fff' }}>{friendProfile.username.replace('@', '')}</span>
             </div>
             <span style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>{friendWeekTotal} XP</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#39ff14' }} />
               <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>You</span>
             </div>
             <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{userWeekTotal} XP</span>
