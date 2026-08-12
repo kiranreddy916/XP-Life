@@ -417,14 +417,14 @@ export default function FriendProfile() {
           Level {friendProfile.level || 1}
         </div>
 
-        {/* Display Name */}
-        <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#fff', margin: '2px 0 2px 0' }}>
-          {friendProfile.name || friendProfile.username.replace('@', '')}
+        {/* Username Heading */}
+        <h2 className="profile-username" style={{ fontSize: '20px', fontWeight: '800', marginTop: '4px', marginBottom: '2px', color: '#fff' }}>
+          @{friendProfile.username.replace('@', '')}
         </h2>
 
-        {/* Username and Joined date */}
-        <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          @{friendProfile.username.replace('@', '')} • Joined {joinedYear}
+        {/* Joined Date */}
+        <div className="profile-joined" style={{ marginTop: '2px', marginBottom: '8px', fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          Joined {joinedYear}
         </div>
       </div>
 
@@ -514,7 +514,7 @@ export default function FriendProfile() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-cyan)' }} />
-              <span style={{ fontWeight: 600, color: '#fff' }}>{friendProfile.name || friendProfile.username.replace('@', '')}</span>
+              <span style={{ fontWeight: 600, color: '#fff' }}>{friendProfile.username.replace('@', '')}</span>
             </div>
             <span style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>{friendWeekTotal} XP</span>
           </div>
