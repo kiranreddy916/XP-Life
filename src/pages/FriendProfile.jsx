@@ -23,11 +23,12 @@ export default function FriendProfile() {
   // Modals & Bottom Sheets
   const [showUnfriendSheet, setShowUnfriendSheet] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showAllPRsModal, setShowAllPRsModal] = useState(false);
   const [processingUnfriend, setProcessingUnfriend] = useState(false);
 
   // Lock body scroll when sheets/modals are open
   useEffect(() => {
-    if (showUnfriendSheet || showConfirmDialog) {
+    if (showUnfriendSheet || showConfirmDialog || showAllPRsModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -35,7 +36,7 @@ export default function FriendProfile() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showUnfriendSheet, showConfirmDialog]);
+  }, [showUnfriendSheet, showConfirmDialog, showAllPRsModal]);
 
   // Helper to format date into YYYY-MM-DD local string
   const getLocalDateStr = (d = new Date()) => {
@@ -104,13 +105,12 @@ export default function FriendProfile() {
         setFriendBadges(badges);
       }
 
-      // 4. Fetch friend's personal records (limit 3)
+      // 4. Fetch friend's personal records (all of them)
       const { data: prs, error: prsErr } = await supabase
         .from('exercise_prs')
         .select('exercise_name, best_weight, best_reps, best_volume, achieved_at')
         .eq('user_id', friendId)
-        .order('best_volume', { ascending: false })
-        .limit(3);
+        .order('best_volume', { ascending: false });
       if (!prsErr && prs) {
         setFriendPRs(prs);
       }
@@ -623,8 +623,18 @@ export default function FriendProfile() {
 
       {/* Personal Records Section */}
       <div className="profile-section" style={{ marginTop: '16px' }}>
-        <div className="section-header">
+        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>Personal Records</h3>
+          {friendPRs.length > 3 && (
+            <span
+              className="section-chevron"
+              onClick={() => setShowAllPRsModal(true)}
+              title="View All Personal Records"
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--accent-cyan)' }}
+            >
+              <ChevronRight size={20} />
+            </span>
+          )}
         </div>
         {friendPRs.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', padding: '12px 0', fontSize: '13px', textAlign: 'center', width: '100%' }}>
@@ -632,7 +642,7 @@ export default function FriendProfile() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-            {friendPRs.map((pr) => (
+            {friendPRs.slice(0, 3).map((pr) => (
               <div key={pr.exercise_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <span style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{pr.exercise_name}</span>
                 <span style={{ color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 700 }}>
@@ -643,6 +653,72 @@ export default function FriendProfile() {
           </div>
         )}
       </div>
+
+      {/* All Personal Records Modal Popup */}
+      {showAllPRsModal && (
+        <div className="modal-overlay" onClick={() => setShowAllPRsModal(false)} style={{ zIndex: 1000 }}>
+          <div 
+            className="settings-modal animate-slide-up" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '360px', 
+              borderRadius: '24px', 
+              padding: '24px', 
+              margin: 'auto',
+              border: '1px solid var(--glass-border)',
+              background: '#1a1f2b'
+            }}
+          >
+            <div className="modal-header" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  @{friendProfile?.username?.replace('@', '')}
+                </span>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#fff', margin: '2px 0 0 0' }}>
+                  All Personal Records
+                </h3>
+              </div>
+              <button 
+                className="close-modal" 
+                onClick={() => setShowAllPRsModal(false)} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: 'none', 
+                  color: 'var(--text-secondary)', 
+                  width: '30px', 
+                  height: '30px', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  cursor: 'pointer' 
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+              {friendPRs.map((pr) => (
+                <div key={pr.exercise_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{pr.exercise_name}</span>
+                  <span style={{ color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 700 }}>
+                    {pr.best_weight} kg × {pr.best_reps} reps
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              className="btn-primary" 
+              onClick={() => setShowAllPRsModal(false)}
+              style={{ width: '100%', height: '40px', fontSize: '13px', marginTop: '20px', fontWeight: '700' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Friends Actions Sheet Overlay */}
       {showUnfriendSheet && (
