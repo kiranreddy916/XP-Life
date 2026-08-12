@@ -306,34 +306,22 @@ export default function FriendProfile() {
   const chartHeight = 150;
   const chartPadding = 20;
 
-  // Calculate cumulative progression arrays
-  const getCumulativeXP = (xpArray) => {
-    let currentSum = 0;
-    return xpArray.map(xp => {
-      currentSum += xp;
-      return currentSum;
-    });
-  };
+  // Calculate max XP in weekly daily data for scaling (minimum max of 100)
+  const maxWeeklyXP = Math.max(...friendWeeklyXP, ...userWeeklyXP, 100);
 
-  const friendCumulative = getCumulativeXP(friendWeeklyXP);
-  const userCumulative = getCumulativeXP(userWeeklyXP);
-  
-  // Calculate max XP in weekly cumulative data for scaling (minimum max of 100)
-  const maxWeeklyXP = Math.max(...friendCumulative, ...userCumulative, 100);
-
-  // Generate SVG Points for lines
-  const getSvgPoints = (cumulativeArray) => {
-    return cumulativeArray.map((xp, index) => {
+  // Generate SVG Points for lines using daily XP values
+  const getSvgPoints = (xpArray) => {
+    return xpArray.map((xp, index) => {
       const x = chartPadding + (index * (chartWidth - chartPadding * 2)) / 6;
       const y = chartHeight - chartPadding - (xp / maxWeeklyXP) * (chartHeight - chartPadding * 2);
       return { x, y };
     });
   };
 
-  const friendPoints = getSvgPoints(friendCumulative);
-  const userPoints = getSvgPoints(userCumulative);
+  const friendPoints = getSvgPoints(friendWeeklyXP);
+  const userPoints = getSvgPoints(userWeeklyXP);
 
-  // Smooth bezier curve path string generator
+  // Smooth bezier curve path string generator (prevents overshoot/undershoot)
   const getPointsPathStr = (points) => {
     if (points.length === 0) return '';
     let path = `M ${points[0].x} ${points[0].y}`;
