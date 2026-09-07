@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import PRPopup from '../components/PRPopup';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
+import { getLevelThreshold, getProfileLevelAndXp } from '../lib/levelUtils';
 
 const REST_MESSAGES = [
   "Recovery is part of the grind 🔥",
@@ -53,13 +55,11 @@ export default function Home() {
   });
   const [profile, setProfile] = useState(() => {
     try {
+      const cached = getCache('user_profile');
+      if (cached) return cached;
       const saved = localStorage.getItem('user');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          home_avatar: parsed.home_avatar || '/sticker.webp',
-          current_streak: parsed.streak || 0
-        };
+        return JSON.parse(saved);
       }
     } catch (e) {}
     return null;
@@ -98,17 +98,10 @@ export default function Home() {
     return restQueueRef.current.pop();
   };
 
-  const getLevelThreshold = (level) => {
-    if (!level) return 100;
-    if (level < 10) return 100;
-    if (level < 30) return 150;
-    if (level < 50) return 200;
-    if (level < 70) return 250;
-    return 300;
-  };
-
   useEffect(() => {
     if (!profile) return;
+
+    const { level: targetLevel, xp: targetXp } = getProfileLevelAndXp(profile);
 
     if (!prevProfileRef.current) {
       // First load / returning to home screen: check if we have a pending XP animation captured on mount
@@ -116,11 +109,11 @@ export default function Home() {
         const { xpEarned, levelUp } = pendingXpAnimationRef.current;
         pendingXpAnimationRef.current = null; // Clear it so we don't run it again
         
-        const oldLevel = levelUp ? (profile.level - 1) : profile.level;
-        let oldXp = profile.xp - xpEarned;
+        const oldLevel = levelUp ? (targetLevel - 1) : targetLevel;
+        let oldXp = targetXp - xpEarned;
         if (levelUp) {
           const oldThreshold = getLevelThreshold(oldLevel);
-          oldXp = oldThreshold - (xpEarned - profile.xp);
+          oldXp = oldThreshold - (xpEarned - targetXp);
           if (oldXp < 0) oldXp = 0;
         }
 
@@ -131,8 +124,8 @@ export default function Home() {
 
         prevProfileRef.current = {
           ...profile,
-          level: oldLevel,
-          xp: oldXp
+          computedLevel: oldLevel,
+          computedXp: oldXp
         };
 
         // On next tick, enable transition and trigger standard animation
@@ -144,46 +137,51 @@ export default function Home() {
         return;
       }
 
-      // Default first load: animate from 0 to current XP
+      // Default first load: set current computed level and XP immediately
       setNoTransition(true);
-      setDisplayXp(0);
-      setDisplayLevel(profile.level || 1);
+      setDisplayLevel(targetLevel);
+      setDisplayXp(targetXp);
       
-      setTimeout(() => {
-        setNoTransition(false);
-        setDisplayXp(profile.xp || 0);
-      }, 100);
-      
-      prevProfileRef.current = profile;
+      prevProfileRef.current = {
+        ...profile,
+        computedLevel: targetLevel,
+        computedXp: targetXp
+      };
       return;
     }
 
-    const prevProfile = prevProfileRef.current;
+    const prevCompLevel = prevProfileRef.current.computedLevel ?? prevProfileRef.current.level ?? 1;
+    const prevCompXp = prevProfileRef.current.computedXp ?? prevProfileRef.current.xp ?? 0;
     
     // Only trigger level up animation logic if profile actually changed while on screen
-    if (profile.xp !== prevProfile.xp || profile.level !== prevProfile.level) {
-      if (profile.level > prevProfile.level) {
+    if (targetXp !== prevCompXp || targetLevel !== prevCompLevel) {
+      if (targetLevel > prevCompLevel) {
          // Level up: Animate to full threshold first
-         setDisplayXp(getLevelThreshold(prevProfile.level));
+         setDisplayXp(getLevelThreshold(prevCompLevel));
          
          setTimeout(() => {
             setNoTransition(true);
             setDisplayXp(0);
-            setDisplayLevel(profile.level);
+            setDisplayLevel(targetLevel);
             
             // Allow CSS to apply no-transition and 0% height
             setTimeout(() => {
                setNoTransition(false);
-               setDisplayXp(profile.xp);
+               setDisplayXp(targetXp);
             }, 50);
          }, 600); // Wait for the fill-to-top animation
          
       } else {
          // Normal XP gain
-         setDisplayXp(profile.xp);
+         setDisplayLevel(targetLevel);
+         setDisplayXp(targetXp);
       }
       
-      prevProfileRef.current = profile;
+      prevProfileRef.current = {
+        ...profile,
+        computedLevel: targetLevel,
+        computedXp: targetXp
+      };
     }
   }, [profile]);
 
@@ -357,13 +355,18 @@ export default function Home() {
           
           if (data && !error) {
             setProfile(data);
+            setCache('user_profile', data);
             // Sync local storage
             localStorage.setItem('user', JSON.stringify({
               ...JSON.parse(localStorage.getItem('user') || '{}'),
+              id: data.id,
               username: data.username,
               gender: data.gender,
               streak: data.current_streak,
-              home_avatar: data.home_avatar || '/sticker.webp'
+              home_avatar: data.home_avatar || '/sticker.webp',
+              total_xp: data.total_xp,
+              level: data.level,
+              xp: data.xp
             }));
           }
 

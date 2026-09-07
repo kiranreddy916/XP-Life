@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getCache, setCache } from '../lib/cacheManager';
+import { getProfileLevelAndXp } from '../lib/levelUtils';
 
 export default function FriendProfile() {
   const { id: friendId } = useParams();
@@ -434,7 +435,7 @@ export default function FriendProfile() {
 
         {/* Current Level Badge */}
         <div style={{ display: 'inline-block', background: 'rgba(102, 252, 241, 0.1)', color: 'var(--accent-cyan)', border: '1px solid var(--accent-cyan-dim)', padding: '2px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Level {friendProfile.level || 1}
+          Level {getProfileLevelAndXp(friendProfile).level}
         </div>
 
         {/* Username Heading */}
