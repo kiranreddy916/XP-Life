@@ -503,10 +503,13 @@ export default function Home() {
           className="home-avatar-wrapper animate-slide-up"
           style={{ 
             position: 'relative', 
-            marginBottom: '6px', 
+            marginBottom: '4px', 
             display: 'flex', 
             justifyContent: 'center', 
-            alignItems: 'center' 
+            alignItems: 'center',
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none'
           }}
         >
           <img 
@@ -515,10 +518,11 @@ export default function Home() {
             draggable="false"
             onContextMenu={(e) => e.preventDefault()}
             style={{
-              width: '135px',
-              height: '135px',
+              height: '240px',
+              width: 'auto',
+              maxWidth: '260px',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 0 16px rgba(102, 252, 241, 0.45))',
+              filter: 'none',
               transition: 'all 0.3s ease'
             }}
           />
