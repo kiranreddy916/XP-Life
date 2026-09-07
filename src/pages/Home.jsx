@@ -43,8 +43,27 @@ export default function Home() {
   const location = useLocation();
   const navigate = useNavigate();
   const [toastInfo, setToastInfo] = useState(null);
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [profile, setProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          home_avatar: parsed.home_avatar || '/sticker.webp',
+          current_streak: parsed.streak || 0
+        };
+      }
+    } catch (e) {}
+    return null;
+  });
   const [restPopup, setRestPopup] = useState(null);
   const [prQueue, setPrQueue] = useState(null); // array of exercise names that hit PRs
   const [isResting, setIsResting] = useState(false);
@@ -295,7 +314,11 @@ export default function Home() {
     const initHome = async () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        if (parsedUser.home_avatar) {
+          setProfile(prev => prev ? { ...prev, home_avatar: parsedUser.home_avatar } : { home_avatar: parsedUser.home_avatar, current_streak: parsedUser.streak || 0 });
+        }
       } else if (!location.state?.isLogin) {
         navigate('/', { replace: true });
         return;
@@ -522,8 +545,7 @@ export default function Home() {
               width: 'auto',
               maxWidth: '360px',
               objectFit: 'contain',
-              filter: 'none',
-              transition: 'all 0.3s ease'
+              filter: 'none'
             }}
           />
         </div>
