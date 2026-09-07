@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { AVATAR_OPTIONS, DEFAULT_AVATAR } from '../constants/avatars';
 
 const getLocalDateStr = () => {
   const d = new Date();
@@ -38,6 +39,7 @@ export default function Profile() {
 
   // In-app Camera state
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
@@ -45,7 +47,7 @@ export default function Profile() {
 
   // Lock body scroll when any modal is open (excluding full-page edit view)
   useEffect(() => {
-    if (showStreakModal || showSettings || showCameraModal) {
+    if (showStreakModal || showSettings || showCameraModal || showAvatarModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -53,7 +55,7 @@ export default function Profile() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showStreakModal, showSettings, showCameraModal]);
+  }, [showStreakModal, showSettings, showCameraModal, showAvatarModal]);
   // Handle file upload to Supabase Storage
   const handleFileUpload = async (file) => {
     if (!file) return;
@@ -325,10 +327,29 @@ export default function Profile() {
       gender: profile.gender || '',
       height: profile.height || '',
       weight: profile.weight || '',
-      profile_image_url: profile.profile_image_url || null
+      profile_image_url: profile.profile_image_url || null,
+      home_avatar: profile.home_avatar || DEFAULT_AVATAR
     });
     setShowSettings(false);
     setIsEditing(true);
+  };
+
+  const handleUpdateAvatar = async (avatarUrl) => {
+    setProfile(prev => prev ? ({ ...prev, home_avatar: avatarUrl }) : null);
+    setEditForm(prev => ({ ...prev, home_avatar: avatarUrl }));
+    
+    if (profile?.id) {
+      await supabase
+        .from('profiles')
+        .update({ home_avatar: avatarUrl })
+        .eq('id', profile.id);
+
+      const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({
+        ...localUser,
+        home_avatar: avatarUrl
+      }));
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -340,7 +361,8 @@ export default function Profile() {
         gender: editForm.gender,
         height: editForm.height ? Number(editForm.height) : null,
         weight: editForm.weight ? Number(editForm.weight) : null,
-        profile_image_url: editForm.profile_image_url
+        profile_image_url: editForm.profile_image_url,
+        home_avatar: editForm.home_avatar || profile.home_avatar || DEFAULT_AVATAR
       })
       .eq('id', profile.id);
 
@@ -354,7 +376,8 @@ export default function Profile() {
         ...localUser,
         username: `@${editForm.username}`,
         gender: editForm.gender,
-        profile_image_url: editForm.profile_image_url
+        profile_image_url: editForm.profile_image_url,
+        home_avatar: editForm.home_avatar || profile.home_avatar || DEFAULT_AVATAR
       }));
 
       setIsEditing(false);
@@ -622,6 +645,49 @@ export default function Profile() {
             />
           </div>
 
+          {/* Home Section Avatar Selector */}
+          <div className="form-group" style={{ marginTop: '8px', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              Home Section Avatar
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {AVATAR_OPTIONS.map((avatar) => {
+                const isSelected = (editForm.home_avatar || profile?.home_avatar || DEFAULT_AVATAR) === avatar.url;
+                return (
+                  <div
+                    key={avatar.id}
+                    onClick={() => setEditForm({ ...editForm, home_avatar: avatar.url })}
+                    style={{
+                      position: 'relative',
+                      background: isSelected ? 'rgba(102, 252, 241, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                      border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '16px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      boxShadow: isSelected ? '0 0 15px rgba(102, 252, 241, 0.25)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {isSelected && (
+                      <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--accent-cyan)', color: '#0b0c10', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800' }}>✓</div>
+                    )}
+                    <img 
+                      src={avatar.url} 
+                      alt={avatar.name} 
+                      draggable="false"
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{ width: '65px', height: '65px', objectFit: 'contain', marginBottom: '4px' }} 
+                    />
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-secondary)' }}>{avatar.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <button 
             className="btn-primary" 
             onClick={handleSaveProfile}
@@ -665,9 +731,74 @@ export default function Profile() {
               Edit Profile
             </button>
             
+            <button className="settings-option" onClick={() => { setShowSettings(false); setShowAvatarModal(true); }}>
+              <User size={20} className="settings-option-icon" />
+              Switch Home Avatar
+            </button>
+
             <button className="settings-option danger" onClick={handleSignout}>
               <LogOut size={20} className="settings-option-icon" />
               Signout
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Switcher Modal */}
+      {showAvatarModal && (
+        <div className="modal-overlay" onClick={() => setShowAvatarModal(false)}>
+          <div className="settings-modal animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '380px', borderRadius: '24px', padding: '24px' }}>
+            <div className="modal-header" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>Switch Home Avatar</h2>
+              <button className="close-modal" onClick={() => setShowAvatarModal(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-secondary)', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px', textAlign: 'center' }}>
+              Choose your character avatar for the Home screen
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              {AVATAR_OPTIONS.map((avatar) => {
+                const isSelected = (profile?.home_avatar || DEFAULT_AVATAR) === avatar.url;
+                return (
+                  <div
+                    key={avatar.id}
+                    onClick={() => handleUpdateAvatar(avatar.url)}
+                    style={{
+                      position: 'relative',
+                      background: isSelected ? 'rgba(102, 252, 241, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                      border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '16px',
+                      padding: '16px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      boxShadow: isSelected ? '0 0 20px rgba(102, 252, 241, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      transform: isSelected ? 'scale(1.03)' : 'scale(1)'
+                    }}
+                  >
+                    {isSelected && (
+                      <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--accent-cyan)', color: '#0b0c10', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800' }}>✓</div>
+                    )}
+                    <img 
+                      src={avatar.url} 
+                      alt={avatar.name}
+                      draggable="false"
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{ width: '85px', height: '85px', objectFit: 'contain', marginBottom: '8px' }} 
+                    />
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-secondary)' }}>{avatar.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button className="btn-primary" onClick={() => setShowAvatarModal(false)} style={{ width: '100%', padding: '12px', fontSize: '14px', fontWeight: '700' }}>
+              Done
             </button>
           </div>
         </div>

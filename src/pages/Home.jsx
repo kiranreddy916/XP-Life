@@ -339,7 +339,8 @@ export default function Home() {
               ...JSON.parse(localStorage.getItem('user') || '{}'),
               username: data.username,
               gender: data.gender,
-              streak: data.current_streak
+              streak: data.current_streak,
+              home_avatar: data.home_avatar || '/sticker.webp'
             }));
           }
 
@@ -496,7 +497,34 @@ export default function Home() {
       )}
 
       <div className="avatar-container" style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div className="username" style={{ marginTop: '10px' }}>{user.username}</div>
+        
+        {/* Home Sticker Avatar */}
+        <div 
+          className="home-avatar-wrapper animate-slide-up"
+          style={{ 
+            position: 'relative', 
+            marginBottom: '6px', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center' 
+          }}
+        >
+          <img 
+            src={profile?.home_avatar || user?.home_avatar || '/sticker.webp'} 
+            alt="Home Avatar"
+            draggable="false"
+            onContextMenu={(e) => e.preventDefault()}
+            style={{
+              width: '135px',
+              height: '135px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 16px rgba(102, 252, 241, 0.45))',
+              transition: 'all 0.3s ease'
+            }}
+          />
+        </div>
+
+        <div className="username" style={{ marginTop: '2px' }}>{user.username}</div>
 
         <div className="level-xp-section animate-slide-up">
           <div className="level-text">Level {displayLevel}</div>
