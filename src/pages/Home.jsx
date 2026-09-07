@@ -561,7 +561,7 @@ export default function Home() {
       </div>
 
       {/* Vertical XP Bar */}
-      <div className="xp-bar-container animate-fade-in" style={{ transform: 'translateY(calc(-50% + 30px))' }}>
+      <div className="xp-bar-container animate-fade-in" style={{ transform: 'translateY(calc(-50% - 45px))' }}>
         <div className="xp-bar-outline">
           <div 
             className={`xp-bar-fill ${noTransition ? 'no-transition' : ''}`} 
