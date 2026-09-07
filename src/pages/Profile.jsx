@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Flame, Zap, Trophy, Star, Plus, ChevronRight, X, UserPen, LogOut, Trash2, Lock, Copy, Check, Camera, Image, Video, User, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 import { AVATAR_OPTIONS, DEFAULT_AVATAR } from '../constants/avatars';
 
 const getLocalDateStr = () => {
@@ -14,20 +15,27 @@ const getLocalDateStr = () => {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [joinedDate, setJoinedDate] = useState('');
+  const [profile, setProfile] = useState(() => getCache('user_profile') || (() => {
+    try {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  })());
+  const [joinedDate, setJoinedDate] = useState(() => getCache('profile_joinedDate') || '');
   const [showSettings, setShowSettings] = useState(false);
-  const [recentBadges, setRecentBadges] = useState([]);
+  const [recentBadges, setRecentBadges] = useState(() => getCache('profile_recentBadges') || []);
   
   // Edit Profile State
   const [isEditing, setIsEditing] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [activeFriendStreaks, setActiveFriendStreaks] = useState([]);
-  const [incomingInvites, setIncomingInvites] = useState([]);
-  const [friendsStreakStatuses, setFriendsStreakStatuses] = useState([]);
+  const [activeFriendStreaks, setActiveFriendStreaks] = useState(() => getCache('profile_activeFriendStreaks') || []);
+  const [incomingInvites, setIncomingInvites] = useState(() => getCache('profile_incomingInvites') || []);
+  const [friendsStreakStatuses, setFriendsStreakStatuses] = useState(() => getCache('profile_friendsStreakStatuses') || []);
   const [showStreakModal, setShowStreakModal] = useState(false);
-  const [loadingStreaks, setLoadingStreaks] = useState(true);
-  const [personalRecords, setPersonalRecords] = useState([]);
+  const [loadingStreaks, setLoadingStreaks] = useState(() => !getCache('profile_activeFriendStreaks'));
+  const [personalRecords, setPersonalRecords] = useState(() => getCache('profile_personalRecords') || []);
   const [editForm, setEditForm] = useState({
     username: '',
     gender: '',
@@ -183,6 +191,7 @@ export default function Profile() {
 
         if (data && isMounted) {
           setProfile(data);
+          setCache('user_profile', data);
         } else if (!data && isMounted) {
           navigate('/onboarding', { state: { userId: user.id, name: user.user_metadata?.full_name || user.email }, replace: true });
         }
@@ -222,6 +231,7 @@ export default function Profile() {
         }
         
         setRecentBadges(recent);
+        setCache('profile_recentBadges', recent);
       }
     };
     fetchBadges();
@@ -229,7 +239,7 @@ export default function Profile() {
 
   const fetchStreakData = async () => {
     try {
-      setLoadingStreaks(true);
+      if (!getCache('profile_activeFriendStreaks')) setLoadingStreaks(true);
       const clientDate = getLocalDateStr();
       // Sync streaks on load
       await supabase.rpc('sync_my_friend_streaks', { p_client_date: clientDate });
@@ -238,16 +248,19 @@ export default function Profile() {
       const { data: activeStreaks, error: activeErr } = await supabase.rpc('get_active_friend_streaks');
       if (activeErr) throw activeErr;
       setActiveFriendStreaks(activeStreaks || []);
+      setCache('profile_activeFriendStreaks', activeStreaks || []);
 
       // Fetch streak statuses of friends (for new streak invite)
       const { data: statuses, error: statusesErr } = await supabase.rpc('get_friends_streak_statuses');
       if (statusesErr) throw statusesErr;
       setFriendsStreakStatuses(statuses || []);
+      setCache('profile_friendsStreakStatuses', statuses || []);
 
       // Fetch incoming invites
       const { data: invites, error: invitesErr } = await supabase.rpc('get_streak_invites');
       if (invitesErr) throw invitesErr;
       setIncomingInvites(invites || []);
+      setCache('profile_incomingInvites', invites || []);
 
     } catch (err) {
       console.error("Error fetching streak data:", err);
@@ -307,6 +320,7 @@ export default function Profile() {
           .limit(3);
         if (!error && data) {
           setPersonalRecords(data);
+          setCache('profile_personalRecords', data);
         }
       } catch (err) {
         console.error("Error fetching PRs for profile preview:", err);

@@ -3,21 +3,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Flame, Zap, Trophy, Star, Dumbbell, X, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 
 export default function FriendProfile() {
   const { id: friendId } = useParams();
   const navigate = useNavigate();
   
   const [currentUser, setCurrentUser] = useState(null);
-  const [friendProfile, setFriendProfile] = useState(null);
-  const [friendStreakWithUser, setFriendStreakWithUser] = useState(0);
-  const [friendBadges, setFriendBadges] = useState([]);
-  const [friendPRs, setFriendPRs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [friendProfile, setFriendProfile] = useState(() => getCache(`friend_profile_${friendId}`) || null);
+  const [friendStreakWithUser, setFriendStreakWithUser] = useState(() => getCache(`friend_streak_${friendId}`) || 0);
+  const [friendBadges, setFriendBadges] = useState(() => getCache(`friend_badges_${friendId}`) || []);
+  const [friendPRs, setFriendPRs] = useState(() => getCache(`friend_prs_${friendId}`) || []);
+  const [loading, setLoading] = useState(() => !getCache(`friend_profile_${friendId}`));
   
   // Chart Data
-  const [friendWeeklyXP, setFriendWeeklyXP] = useState(Array(7).fill(0));
-  const [userWeeklyXP, setUserWeeklyXP] = useState(Array(7).fill(0));
+  const [friendWeeklyXP, setFriendWeeklyXP] = useState(() => getCache(`friend_weekly_xp_${friendId}`) || Array(7).fill(0));
+  const [userWeeklyXP, setUserWeeklyXP] = useState(() => getCache(`user_weekly_xp_${friendId}`) || Array(7).fill(0));
   const [weekLabels, setWeekLabels] = useState(['M', 'T', 'W', 'T', 'F', 'S', 'S']);
   
   // Modals & Bottom Sheets
@@ -66,7 +67,7 @@ export default function FriendProfile() {
   // Fetch all profile details, badges, and records
   const fetchAllFriendData = async () => {
     try {
-      setLoading(true);
+      if (!getCache(`friend_profile_${friendId}`)) setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/', { replace: true });
@@ -88,6 +89,7 @@ export default function FriendProfile() {
         return;
       }
       setFriendProfile(profile);
+      setCache(`friend_profile_${friendId}`, profile);
 
       // 2. Fetch current friend streak with logged-in user
       const { data: activeStreaks } = await supabase
@@ -97,12 +99,15 @@ export default function FriendProfile() {
         .or(`and(sender_id.eq.${session.user.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${session.user.id})`)
         .maybeSingle();
 
-      setFriendStreakWithUser(activeStreaks?.current_streak || 0);
+      const streakVal = activeStreaks?.current_streak || 0;
+      setFriendStreakWithUser(streakVal);
+      setCache(`friend_streak_${friendId}`, streakVal);
 
       // 3. Fetch friend's monthly badges
       const { data: badges, error: badgesErr } = await supabase.rpc('get_friend_badges', { p_user_id: friendId });
       if (!badgesErr && badges) {
         setFriendBadges(badges);
+        setCache(`friend_badges_${friendId}`, badges);
       }
 
       // 4. Fetch friend's personal records (all of them)
@@ -113,6 +118,7 @@ export default function FriendProfile() {
         .order('best_volume', { ascending: false });
       if (!prsErr && prs) {
         setFriendPRs(prs);
+        setCache(`friend_prs_${friendId}`, prs);
       }
 
       // 5. Fetch XP progress data for current week
@@ -163,6 +169,8 @@ export default function FriendProfile() {
 
       setFriendWeeklyXP(friendXP);
       setUserWeeklyXP(userXP);
+      setCache(`friend_weekly_xp_${friendId}`, friendXP);
+      setCache(`user_weekly_xp_${friendId}`, userXP);
 
     } catch (err) {
       console.error("Error loading friend profile details:", err);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pencil, Trash2, Pin, PinOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 import Toast from '../components/Toast';
 
 const SYSTEM_TASK_NAMES = ['Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox'];
@@ -20,8 +21,8 @@ const SYSTEM_TASK_DESCRIPTIONS = {
 
 export default function Checklist() {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState(() => getCache('checklist_tasks') || []);
+  const [loading, setLoading] = useState(() => !getCache('checklist_tasks'));
   const [showModal, setShowModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -47,6 +48,7 @@ export default function Checklist() {
       const { data, error } = await supabase.rpc('get_checklist_tasks', { p_client_date: getLocalDateStr() });
       if (error) throw error;
       setTasks(data || []);
+      setCache('checklist_tasks', data || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {

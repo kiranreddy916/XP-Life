@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy, Dumbbell } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 
 export default function PersonalRecords() {
   const navigate = useNavigate();
-  const [prs, setPrs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [prs, setPrs] = useState(() => getCache('user_prs') || []);
+  const [loading, setLoading] = useState(() => !getCache('user_prs'));
 
   useEffect(() => {
     const fetchPRs = async () => {
@@ -19,7 +20,10 @@ export default function PersonalRecords() {
         .eq('user_id', session.user.id)
         .order('best_volume', { ascending: false });
 
-      if (!error) setPrs(data || []);
+      if (!error) {
+        setPrs(data || []);
+        setCache('user_prs', data || []);
+      }
       setLoading(false);
     };
     fetchPRs();

@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Zap, Flame, Trophy, Calendar, X, Dumbbell } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 
 export default function WorkoutTracker() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const friendId = searchParams.get('friendId');
+  const cacheKeySuffix = friendId || 'my';
 
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
-  const [logs, setLogs] = useState({});
+  const [loading, setLoading] = useState(() => !getCache(`tracker_logs_${cacheKeySuffix}`));
+  const [profile, setProfile] = useState(() => getCache(`tracker_profile_${cacheKeySuffix}`) || null);
+  const [logs, setLogs] = useState(() => getCache(`tracker_logs_${cacheKeySuffix}`) || {});
   const [targetUserId, setTargetUserId] = useState(null);
 
   // States for interactive day modal
@@ -31,7 +33,7 @@ export default function WorkoutTracker() {
   useEffect(() => {
     const initTracker = async () => {
       try {
-        setLoading(true);
+        if (!getCache(`tracker_logs_${cacheKeySuffix}`)) setLoading(true);
         // Get session
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
@@ -51,6 +53,7 @@ export default function WorkoutTracker() {
 
         if (profileErr) throw profileErr;
         setProfile(profileData);
+        setCache(`tracker_profile_${cacheKeySuffix}`, profileData);
 
         // Fetch activity logs from May 1, 2026 to August 31, 2026
         const { data: logsData, error: logsErr } = await supabase
@@ -75,6 +78,7 @@ export default function WorkoutTracker() {
           });
         }
         setLogs(logsMap);
+        setCache(`tracker_logs_${cacheKeySuffix}`, logsMap);
 
       } catch (err) {
         console.error("Failed to load workout tracker data:", err);

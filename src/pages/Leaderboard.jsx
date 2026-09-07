@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Users, Flame, Sparkles, UserPlus, Check, X, Bell, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 import AddFriendsSheet from '../components/AddFriendsSheet';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState(null);
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(() => getCache('leaderboard_user_profile') || null);
+  const [leaderboardData, setLeaderboardData] = useState(() => getCache('leaderboard_data') || []);
+  const [pendingRequests, setPendingRequests] = useState(() => getCache('leaderboard_pending') || []);
+  const [loading, setLoading] = useState(() => !getCache('leaderboard_data'));
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [timeframe, setTimeframe] = useState('weekly'); // 'weekly' | 'monthly' | 'overall'
   
-  const [sentRequests, setSentRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState(() => getCache('leaderboard_sent') || []);
   const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
   
   // Sheet & Modal controls
@@ -74,6 +75,7 @@ export default function Leaderboard() {
         
       if (profileErr) throw profileErr;
       setUserProfile(profile);
+      if (profile) setCache('leaderboard_user_profile', profile);
 
       // 2. Fetch pending requests (received)
       const { data: pending, error: pendingErr } = await supabase
@@ -81,6 +83,7 @@ export default function Leaderboard() {
         
       if (pendingErr) throw pendingErr;
       setPendingRequests(pending || []);
+      setCache('leaderboard_pending', pending || []);
 
       // Fetch pending requests (sent)
       const { data: friendships } = await supabase
@@ -111,11 +114,14 @@ export default function Leaderboard() {
             };
           });
           setSentRequests(merged);
+          setCache('leaderboard_sent', merged);
         } else {
           setSentRequests([]);
+          setCache('leaderboard_sent', []);
         }
       } else {
         setSentRequests([]);
+        setCache('leaderboard_sent', []);
       }
 
       // 3. Fetch leaderboard
@@ -139,6 +145,7 @@ export default function Leaderboard() {
         
       if (boardErr) throw boardErr;
       setLeaderboardData(board || []);
+      setCache('leaderboard_data', board || []);
 
     } catch (err) {
       console.error('Error fetching leaderboard data:', err);

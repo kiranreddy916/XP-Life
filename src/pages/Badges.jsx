@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { getCache, setCache } from '../lib/cacheManager';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -10,8 +11,8 @@ const MONTH_NAMES = [
 
 export default function Badges() {
   const navigate = useNavigate();
-  const [badgesByYear, setBadgesByYear] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [badgesByYear, setBadgesByYear] = useState(() => getCache('user_badgesByYear') || {});
+  const [loading, setLoading] = useState(() => !getCache('user_badgesByYear'));
 
   useEffect(() => {
     const fetchBadges = async () => {
@@ -32,6 +33,7 @@ export default function Badges() {
         grouped[y].sort((a, b) => a.month - b.month);
       });
       setBadgesByYear(grouped);
+      setCache('user_badgesByYear', grouped);
       setLoading(false);
     };
     fetchBadges();
