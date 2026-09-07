@@ -4,11 +4,21 @@ import { ArrowLeft, Zap, Flame, Trophy, Calendar, X, Dumbbell } from 'lucide-rea
 import { supabase } from '../lib/supabaseClient';
 import { getCache, setCache } from '../lib/cacheManager';
 
+const MONTH_NAMES_FULL = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 export default function WorkoutTracker() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const friendId = searchParams.get('friendId');
   const cacheKeySuffix = friendId || 'my';
+
+  const now = new Date();
+  const [anchorDate, setAnchorDate] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   const [loading, setLoading] = useState(() => !getCache(`tracker_logs_${cacheKeySuffix}`));
   const [profile, setProfile] = useState(() => getCache(`tracker_profile_${cacheKeySuffix}`) || null);
@@ -55,13 +65,22 @@ export default function WorkoutTracker() {
         setProfile(profileData);
         setCache(`tracker_profile_${cacheKeySuffix}`, profileData);
 
-        // Fetch activity logs from May 1, 2026 to August 31, 2026
+        // Calculate 12-month window (from 11 months before anchorDate up to end of anchorDate month)
+        const baseYear = anchorDate.getFullYear();
+        const baseMonth = anchorDate.getMonth();
+        const startMonthDate = new Date(baseYear, baseMonth - 11, 1);
+        const endMonthDate = new Date(baseYear, baseMonth + 1, 0);
+
+        const startDateStr = getLocalDateStr(startMonthDate);
+        const endDateStr = getLocalDateStr(endMonthDate);
+
+        // Fetch activity logs for the 12-month window
         const { data: logsData, error: logsErr } = await supabase
           .from('activity_logs')
           .select('activity_date, activity_type')
           .eq('user_id', uid)
-          .gte('activity_date', '2026-05-01')
-          .lte('activity_date', '2026-08-31');
+          .gte('activity_date', startDateStr)
+          .lte('activity_date', endDateStr);
 
         if (logsErr) throw logsErr;
 
@@ -69,7 +88,6 @@ export default function WorkoutTracker() {
         const logsMap = {};
         if (logsData) {
           logsData.forEach(log => {
-            // If both rest and workout exist on a day, prioritize workout
             if (log.activity_type === 'workout') {
               logsMap[log.activity_date] = 'workout';
             } else if (log.activity_type === 'rest' && logsMap[log.activity_date] !== 'workout') {
@@ -88,7 +106,7 @@ export default function WorkoutTracker() {
     };
 
     initTracker();
-  }, [friendId, navigate]);
+  }, [friendId, anchorDate, navigate]);
 
   // Lock body scroll when popup is active
   useEffect(() => {
@@ -164,13 +182,44 @@ export default function WorkoutTracker() {
   // Account creation date for graying out before account was made
   const accountCreatedDateStr = profile?.created_at ? getLocalDateStr(new Date(profile.created_at)) : null;
 
-  // Calendar months to display (August 2026 down to May 2026)
-  const monthsToRender = [
-    { year: 2026, month: 7, name: 'August 2026' },  // Month index 7 is August
-    { year: 2026, month: 6, name: 'July 2026' },
-    { year: 2026, month: 5, name: 'June 2026' },
-    { year: 2026, month: 4, name: 'May 2026' }
-  ];
+  // Dynamically generate 12 rolling months ending at anchorDate (current/selected month)
+  const generateMonthsToRender = (anchor) => {
+    const months = [];
+    const baseYear = anchor.getFullYear();
+    const baseMonth = anchor.getMonth();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(baseYear, baseMonth - i, 1);
+      const yr = d.getFullYear();
+      const m = d.getMonth();
+      const name = `${MONTH_NAMES_FULL[m]} ${yr}`;
+      months.push({ year: yr, month: m, name });
+    }
+    return months;
+  };
+
+  const monthsToRender = generateMonthsToRender(anchorDate);
+
+  const handleDateSelect = (newMonth, newYear) => {
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
+
+    const found = monthsToRender.find(m => m.year === newYear && m.month === newMonth);
+    if (found) {
+      const elem = document.getElementById(`month-card-${newYear}-${newMonth}`);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      const newAnchor = new Date(newYear, newMonth, 1);
+      setAnchorDate(newAnchor);
+      setTimeout(() => {
+        const elem = document.getElementById(`month-card-${newYear}-${newMonth}`);
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 350);
+    }
+  };
 
   const weekdayHeaders = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -218,6 +267,62 @@ export default function WorkoutTracker() {
       {/* Spacing container to fit screen perfectly */}
       <div style={{ padding: '0 20px', maxWidth: '440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
+        {/* Month / Year Quick Jump Selector */}
+        <div className="glass-panel" style={{ padding: '12px 16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '800', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Calendar size={15} />
+            <span>Select Date</span>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Month Selector */}
+            <select
+              value={selectedMonth}
+              onChange={(e) => handleDateSelect(Number(e.target.value), selectedYear)}
+              style={{
+                background: '#141822',
+                color: '#fff',
+                border: '1px solid var(--accent-cyan)',
+                borderRadius: '10px',
+                padding: '6px 10px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              {MONTH_NAMES_FULL.map((name, idx) => (
+                <option key={idx} value={idx} style={{ background: '#141822', color: '#fff' }}>
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            {/* Year Selector */}
+            <select
+              value={selectedYear}
+              onChange={(e) => handleDateSelect(selectedMonth, Number(e.target.value))}
+              style={{
+                background: '#141822',
+                color: '#fff',
+                border: '1px solid var(--accent-cyan)',
+                borderRadius: '10px',
+                padding: '6px 10px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              {[2024, 2025, 2026, 2027].map((yr) => (
+                <option key={yr} value={yr} style={{ background: '#141822', color: '#fff' }}>
+                  {yr}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Colors/Legend Card */}
         <div className="glass-panel" style={{ padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -264,7 +369,12 @@ export default function WorkoutTracker() {
           }
 
           return (
-            <div className="glass-panel" key={monthName} style={{ padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div 
+              className="glass-panel" 
+              key={`${year}-${month}`} 
+              id={`month-card-${year}-${month}`} 
+              style={{ padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', scrollMarginTop: '20px' }}
+            >
               {/* Month Header */}
               <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
                 {monthName}
