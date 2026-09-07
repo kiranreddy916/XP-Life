@@ -178,15 +178,25 @@ export default function WorkoutTracker() {
     );
   }
 
-  // Dynamically generate months to render, starting at anchorDate and stopping at createdDate's month/year
+  // Dynamically generate months to render, starting at anchorDate (capped at current month) and stopping at createdDate's month/year
   const generateMonthsToRender = (anchor, cDate) => {
     const months = [];
-    const baseYear = anchor.getFullYear();
-    const baseMonth = anchor.getMonth();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth();
+
+    // Cap anchor at current month (never render future/upcoming months)
+    let baseYear = anchor.getFullYear();
+    let baseMonth = anchor.getMonth();
+    if (baseYear > nowYear || (baseYear === nowYear && baseMonth > nowMonth)) {
+      baseYear = nowYear;
+      baseMonth = nowMonth;
+    }
+
     const createdYr = cDate ? cDate.getFullYear() : baseYear;
     const createdM = cDate ? cDate.getMonth() : 0;
 
-    for (let i = 0; i < 48; i++) {
+    // Up to 12 months maximum, stopping strictly at account creation month/year
+    for (let i = 0; i < 12; i++) {
       const d = new Date(baseYear, baseMonth - i, 1);
       const yr = d.getFullYear();
       const m = d.getMonth();
@@ -209,21 +219,32 @@ export default function WorkoutTracker() {
 
   const monthsToRender = generateMonthsToRender(anchorDate, createdDate);
 
-  const handleDateSelect = (newMonth, newYear) => {
-    setSelectedMonth(newMonth);
-    setSelectedYear(newYear);
+  const createdYr = createdDate ? createdDate.getFullYear() : now.getFullYear();
+  const createdM = createdDate ? createdDate.getMonth() : 0;
+  const nowYear = now.getFullYear();
+  const nowMonth = now.getMonth();
 
-    const found = monthsToRender.find(m => m.year === newYear && m.month === newMonth);
+  const handleDateSelect = (newMonth, newYear) => {
+    let clampedYear = Math.min(Math.max(newYear, createdYr), nowYear);
+    let minM = (clampedYear === createdYr) ? createdM : 0;
+    let maxM = (clampedYear === nowYear) ? nowMonth : 11;
+    let clampedMonth = Math.min(Math.max(newMonth, minM), maxM);
+
+    setSelectedMonth(clampedMonth);
+    setSelectedYear(clampedYear);
+
+    const newAnchor = new Date(clampedYear, clampedMonth, 1);
+    setAnchorDate(newAnchor);
+
+    const found = monthsToRender.find(m => m.year === clampedYear && m.month === clampedMonth);
     if (found) {
-      const elem = document.getElementById(`month-card-${newYear}-${newMonth}`);
+      const elem = document.getElementById(`month-card-${clampedYear}-${clampedMonth}`);
       if (elem) {
         elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else {
-      const newAnchor = new Date(newYear, newMonth, 1);
-      setAnchorDate(newAnchor);
       setTimeout(() => {
-        const elem = document.getElementById(`month-card-${newYear}-${newMonth}`);
+        const elem = document.getElementById(`month-card-${clampedYear}-${clampedMonth}`);
         if (elem) {
           elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -231,20 +252,20 @@ export default function WorkoutTracker() {
     }
   };
 
-  // Restrict year options from account creation year to current/selected year
-  const createdYr = createdDate ? createdDate.getFullYear() : now.getFullYear();
-  const createdM = createdDate ? createdDate.getMonth() : 0;
-
+  // Restrict year options strictly between account creation year and current year (no future years)
   const minYear = createdYr;
-  const maxYear = Math.max(now.getFullYear(), selectedYear, createdYr);
+  const maxYear = nowYear;
   const yearOptions = [];
   for (let y = minYear; y <= maxYear; y++) {
     yearOptions.push(y);
   }
 
-  // Restrict month options for the account creation year
+  // Restrict month options between creation month (for creation year) and current month (for current year)
   const minMonthIndex = (selectedYear === createdYr) ? createdM : 0;
-  const availableMonthOptions = MONTH_NAMES_FULL.map((name, idx) => ({ name, idx })).filter(m => m.idx >= minMonthIndex);
+  const maxMonthIndex = (selectedYear === nowYear) ? nowMonth : 11;
+  const availableMonthOptions = MONTH_NAMES_FULL
+    .map((name, idx) => ({ name, idx }))
+    .filter(m => m.idx >= minMonthIndex && m.idx <= maxMonthIndex);
 
   const weekdayHeaders = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
