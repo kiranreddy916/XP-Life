@@ -40,6 +40,9 @@ export default function WorkoutTracker() {
 
   const todayStr = getLocalDateStr();
 
+  const createdDate = profile?.created_at ? new Date(profile.created_at) : null;
+  const accountCreatedDateStr = createdDate ? getLocalDateStr(createdDate) : null;
+
   useEffect(() => {
     const initTracker = async () => {
       try {
@@ -65,16 +68,12 @@ export default function WorkoutTracker() {
         setProfile(profileData);
         setCache(`tracker_profile_${cacheKeySuffix}`, profileData);
 
-        // Calculate 12-month window (from 11 months before anchorDate up to end of anchorDate month)
-        const baseYear = anchorDate.getFullYear();
-        const baseMonth = anchorDate.getMonth();
-        const startMonthDate = new Date(baseYear, baseMonth - 11, 1);
-        const endMonthDate = new Date(baseYear, baseMonth + 1, 0);
-
-        const startDateStr = getLocalDateStr(startMonthDate);
+        const accDate = profileData?.created_at ? new Date(profileData.created_at) : createdDate;
+        const startDateStr = accDate ? getLocalDateStr(accDate) : getLocalDateStr(new Date(now.getFullYear(), now.getMonth() - 11, 1));
+        const endMonthDate = new Date(anchorDate.getFullYear(), anchorDate.getMonth() + 1, 0);
         const endDateStr = getLocalDateStr(endMonthDate);
 
-        // Fetch activity logs for the 12-month window
+        // Fetch activity logs from account creation date to anchor end month
         const { data: logsData, error: logsErr } = await supabase
           .from('activity_logs')
           .select('activity_date, activity_type')
@@ -179,25 +178,36 @@ export default function WorkoutTracker() {
     );
   }
 
-  // Account creation date for graying out before account was made
-  const accountCreatedDateStr = profile?.created_at ? getLocalDateStr(new Date(profile.created_at)) : null;
-
-  // Dynamically generate 12 rolling months ending at anchorDate (current/selected month)
-  const generateMonthsToRender = (anchor) => {
+  // Dynamically generate months to render, starting at anchorDate and stopping at createdDate's month/year
+  const generateMonthsToRender = (anchor, cDate) => {
     const months = [];
     const baseYear = anchor.getFullYear();
     const baseMonth = anchor.getMonth();
-    for (let i = 0; i < 12; i++) {
+    const createdYr = cDate ? cDate.getFullYear() : baseYear;
+    const createdM = cDate ? cDate.getMonth() : 0;
+
+    for (let i = 0; i < 48; i++) {
       const d = new Date(baseYear, baseMonth - i, 1);
       const yr = d.getFullYear();
       const m = d.getMonth();
+
+      // Stop if month/year is prior to account creation month/year
+      if (yr < createdYr || (yr === createdYr && m < createdM)) {
+        break;
+      }
+
       const name = `${MONTH_NAMES_FULL[m]} ${yr}`;
       months.push({ year: yr, month: m, name });
     }
+
+    if (months.length === 0) {
+      months.push({ year: baseYear, month: baseMonth, name: `${MONTH_NAMES_FULL[baseMonth]} ${baseYear}` });
+    }
+
     return months;
   };
 
-  const monthsToRender = generateMonthsToRender(anchorDate);
+  const monthsToRender = generateMonthsToRender(anchorDate, createdDate);
 
   const handleDateSelect = (newMonth, newYear) => {
     setSelectedMonth(newMonth);
@@ -220,6 +230,21 @@ export default function WorkoutTracker() {
       }, 350);
     }
   };
+
+  // Restrict year options from account creation year to current/selected year
+  const createdYr = createdDate ? createdDate.getFullYear() : now.getFullYear();
+  const createdM = createdDate ? createdDate.getMonth() : 0;
+
+  const minYear = createdYr;
+  const maxYear = Math.max(now.getFullYear(), selectedYear, createdYr);
+  const yearOptions = [];
+  for (let y = minYear; y <= maxYear; y++) {
+    yearOptions.push(y);
+  }
+
+  // Restrict month options for the account creation year
+  const minMonthIndex = (selectedYear === createdYr) ? createdM : 0;
+  const availableMonthOptions = MONTH_NAMES_FULL.map((name, idx) => ({ name, idx })).filter(m => m.idx >= minMonthIndex);
 
   const weekdayHeaders = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -291,7 +316,7 @@ export default function WorkoutTracker() {
                 outline: 'none'
               }}
             >
-              {MONTH_NAMES_FULL.map((name, idx) => (
+              {availableMonthOptions.map(({ name, idx }) => (
                 <option key={idx} value={idx} style={{ background: '#141822', color: '#fff' }}>
                   {name}
                 </option>
@@ -314,7 +339,7 @@ export default function WorkoutTracker() {
                 outline: 'none'
               }}
             >
-              {[2024, 2025, 2026, 2027].map((yr) => (
+              {yearOptions.map((yr) => (
                 <option key={yr} value={yr} style={{ background: '#141822', color: '#fff' }}>
                   {yr}
                 </option>
@@ -399,6 +424,11 @@ export default function WorkoutTracker() {
                   // Construct standard date string: YYYY-MM-DD
                   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
                   
+                  // Hide days prior to account creation date
+                  if (accountCreatedDateStr && dateStr < accountCreatedDateStr) {
+                    return <div key={`pre-account-${dayNum}`} style={{ width: '100%', aspectRatio: '1 / 1' }} />;
+                  }
+
                   const isFuture = dateStr > todayStr;
                   let statusClass = '';
                   
@@ -411,12 +441,7 @@ export default function WorkoutTracker() {
                     } else if (type === 'rest') {
                       statusClass = 'active-cyan';
                     } else {
-                      // Check if it's before account creation
-                      if (accountCreatedDateStr && dateStr < accountCreatedDateStr) {
-                        statusClass = ''; // Pre-account days show as empty outline circles
-                      } else {
-                        statusClass = 'active-red'; // Missed day
-                      }
+                      statusClass = 'active-red'; // Missed day
                     }
                   }
 
