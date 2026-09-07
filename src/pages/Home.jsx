@@ -444,7 +444,7 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="container animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(75px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+    <div className="container animate-fade-in" style={{ position: 'fixed', top: 0, bottom: 'calc(60px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', overflow: 'hidden', touchAction: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       {toastInfo && (
         <Toast
           key={toastInfo.title + toastInfo.message}
@@ -496,7 +496,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="avatar-container" style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="avatar-container" style={{ position: 'absolute', bottom: '4px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         {/* Home Sticker Avatar */}
         <div 
@@ -518,9 +518,9 @@ export default function Home() {
             draggable="false"
             onContextMenu={(e) => e.preventDefault()}
             style={{
-              height: '240px',
+              height: '290px',
               width: 'auto',
-              maxWidth: '260px',
+              maxWidth: '310px',
               objectFit: 'contain',
               filter: 'none',
               transition: 'all 0.3s ease'
@@ -561,7 +561,7 @@ export default function Home() {
       </div>
 
       {/* Vertical XP Bar */}
-      <div className="xp-bar-container animate-fade-in">
+      <div className="xp-bar-container animate-fade-in" style={{ transform: 'translateY(calc(-50% + 30px))' }}>
         <div className="xp-bar-outline">
           <div 
             className={`xp-bar-fill ${noTransition ? 'no-transition' : ''}`} 
