@@ -518,9 +518,9 @@ export default function Home() {
             draggable="false"
             onContextMenu={(e) => e.preventDefault()}
             style={{
-              height: '290px',
+              height: '350px',
               width: 'auto',
-              maxWidth: '310px',
+              maxWidth: '360px',
               objectFit: 'contain',
               filter: 'none',
               transition: 'all 0.3s ease'
