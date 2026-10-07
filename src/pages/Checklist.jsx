@@ -5,15 +5,15 @@ import { supabase } from '../lib/supabaseClient';
 import { getCache, setCache } from '../lib/cacheManager';
 import Toast from '../components/Toast';
 
-const SYSTEM_TASK_NAMES = ['Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Alcohol', 'SM Detox'];
+const SYSTEM_TASK_NAMES = ['Sleep', 'Sun Light', 'Exercise', 'Learn', 'Eat Clean', 'Hydrate', 'No Alcohol', 'SM Detox'];
 
 const SYSTEM_TASK_DESCRIPTIONS = {
   'Sleep': 'Get 7-8 hours of quality sleep to optimize recovery, cognitive function, and hormone balance.',
   'Sun Light': 'Get 10-15 minutes of direct morning sunlight to regulate your circadian rhythm and boost Vitamin D.',
   'Exercise': 'Engage in at least 30 minutes of physical activity to build strength, endurance, and mental clarity.',
+  'Learn': 'Spend 20-30 minutes reading, studying, or practicing a new skill to foster continuous personal growth.',
   'Eat Clean': 'Fuel your body with whole, nutrient-dense foods. Avoid processed sugars and seed oils.',
   'Hydrate': 'Drink at least 3-4 liters of water throughout the day to stay fully hydrated and maintain peak performance.',
-  'Learn': 'Spend 20-30 minutes reading, studying, or practicing a new skill to foster continuous personal growth.',
   'No Alcohol': 'Avoid alcohol to maintain optimal sleep quality, liver health, and clear mental focus.',
   'SM Detox': 'Limit social media usage or do a complete detox to reclaim your attention span and reduce anxiety.'
 };
@@ -34,7 +34,7 @@ export default function Checklist() {
   const [toastInfo, setToastInfo] = useState(null);
   const [selectedDescriptionTask, setSelectedDescriptionTask] = useState(null);
 
-  // Reorder & long press state
+  // General tasks reorder & long press state
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null);
   const [isReorderActive, setIsReorderActive] = useState(false);
@@ -43,10 +43,10 @@ export default function Checklist() {
   const descTimerRef = useRef(null);
   const startPosRef = useRef({ x: 0, y: 0 });
 
-  // Custom order persistence
+  // Custom order persistence for General Tasks
   const [customOrder, setCustomOrder] = useState(() => {
     try {
-      const saved = localStorage.getItem('checklist_custom_order');
+      const saved = localStorage.getItem('checklist_general_custom_order');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -67,7 +67,7 @@ export default function Checklist() {
 
   const getTaskId = (task) => task.id || task.title;
 
-  const sortTasksByCustomOrder = (taskList) => {
+  const sortGeneralTasks = (taskList) => {
     if (!customOrder || customOrder.length === 0) return taskList;
     const orderMap = new Map();
     customOrder.forEach((id, idx) => orderMap.set(id, idx));
@@ -81,32 +81,25 @@ export default function Checklist() {
     });
   };
 
-  const saveCustomOrder = (newOrderForList, fullList) => {
-    const newOrderedIds = newOrderForList.map(getTaskId);
-    const existingOtherIds = customOrder.filter(id => !fullList.some(t => getTaskId(t) === id));
-    const updatedCustomOrder = [...newOrderedIds, ...existingOtherIds];
-
-    setCustomOrder(updatedCustomOrder);
-    try {
-      localStorage.setItem('checklist_custom_order', JSON.stringify(updatedCustomOrder));
-    } catch (e) {
-      console.error('Error saving custom order:', e);
-    }
-  };
-
-  const reorderAndSave = (dragged, target, currentList) => {
+  const reorderGeneralTasks = (dragged, target, list) => {
     if (!dragged || !target || getTaskId(dragged) === getTaskId(target)) return;
 
-    const fromIndex = currentList.findIndex(t => getTaskId(t) === getTaskId(dragged));
-    const toIndex = currentList.findIndex(t => getTaskId(t) === getTaskId(target));
+    const fromIndex = list.findIndex(t => getTaskId(t) === getTaskId(dragged));
+    const toIndex = list.findIndex(t => getTaskId(t) === getTaskId(target));
 
     if (fromIndex === -1 || toIndex === -1) return;
 
-    const updatedList = [...currentList];
+    const updatedList = [...list];
     const [movedItem] = updatedList.splice(fromIndex, 1);
     updatedList.splice(toIndex, 0, movedItem);
 
-    saveCustomOrder(updatedList, currentList);
+    const newOrderIds = updatedList.map(getTaskId);
+    setCustomOrder(newOrderIds);
+    try {
+      localStorage.setItem('checklist_general_custom_order', JSON.stringify(newOrderIds));
+    } catch (e) {
+      console.error('Error saving general tasks order:', e);
+    }
   };
 
   const fetchTasks = async () => {
@@ -134,7 +127,6 @@ export default function Checklist() {
     const newCompletedState = !task.completed;
     let allSystemCompletedOptimistic = false;
 
-    // Optimistic UI update using functional state
     setTasks(prev => {
       const newTasks = prev.map(t => t.id === task.id ? { ...t, completed: newCompletedState } : t);
       const sysTasks = newTasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title)));
@@ -241,63 +233,73 @@ export default function Checklist() {
     setShowModal(true);
   };
 
-  // 5-Second Long Press Pointer Handlers for Reordering
-  const handlePointerDown = (task, isSystem, e) => {
+  // System Task Long-Press Handler (600ms -> Displays Task Description)
+  const handleSystemPointerDown = (task, e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startPosRef.current = { x: clientX, y: clientY };
+
+    if (descTimerRef.current) clearTimeout(descTimerRef.current);
+
+    descTimerRef.current = setTimeout(() => {
+      setSelectedDescriptionTask(task);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 600);
+  };
+
+  const handleSystemPointerMove = (e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dist = Math.hypot(clientX - startPosRef.current.x, clientY - startPosRef.current.y);
+    if (dist > 10 && descTimerRef.current) {
+      clearTimeout(descTimerRef.current);
+      descTimerRef.current = null;
+    }
+  };
+
+  const handleSystemPointerUp = () => {
+    if (descTimerRef.current) {
+      clearTimeout(descTimerRef.current);
+      descTimerRef.current = null;
+    }
+  };
+
+  // General Task Long-Press Handler (500ms -> Drag & Reorder within General Tasks table)
+  const handleGeneralPointerDown = (task, e) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     startPosRef.current = { x: clientX, y: clientY };
 
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-    if (descTimerRef.current) clearTimeout(descTimerRef.current);
 
-    // Short long-press (600ms) for System Task description modal
-    if (isSystem) {
-      descTimerRef.current = setTimeout(() => {
-        if (!isReorderActive) {
-          setSelectedDescriptionTask(task);
-          if (navigator.vibrate) navigator.vibrate(40);
-        }
-      }, 600);
-    }
-
-    // 5-Second long-press (5000ms) to trigger reorder mode
     longPressTimerRef.current = setTimeout(() => {
-      if (descTimerRef.current) clearTimeout(descTimerRef.current);
-      setSelectedDescriptionTask(null);
-
       setDraggedTask(task);
       setIsReorderActive(true);
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]); // double buzz on 5s activation
-      }
-    }, 5000);
+      if (navigator.vibrate) navigator.vibrate(60);
+    }, 500);
   };
 
-  const handlePointerMove = (e, list) => {
+  const handleGeneralPointerMove = (e, generalTasksList) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
     if (!isReorderActive) {
-      // Differentiate tap/scroll from hold: if pointer moved > 10px before 5s, cancel timers
       const dist = Math.hypot(clientX - startPosRef.current.x, clientY - startPosRef.current.y);
-      if (dist > 10) {
-        if (longPressTimerRef.current) {
-          clearTimeout(longPressTimerRef.current);
-          longPressTimerRef.current = null;
-        }
-        if (descTimerRef.current) {
-          clearTimeout(descTimerRef.current);
-          descTimerRef.current = null;
-        }
+      if (dist > 10 && longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
       return;
     }
 
-    // Reorder mode is active! Locate target row under pointer
+    // Reorder mode active: locate target element under pointer
     const elem = document.elementFromPoint(clientX, clientY);
     if (!elem) return;
-    const rowElem = elem.closest('.cl-task-row');
-    if (rowElem) {
+
+    // Constrain drag target strictly within the General Tasks table!
+    const generalPanel = elem.closest('.cl-general-panel');
+    const rowElem = elem.closest('.cl-general-task-row');
+    if (generalPanel && rowElem) {
       const taskId = rowElem.getAttribute('data-task-id');
       if (taskId && taskId !== dragOverTaskId) {
         setDragOverTaskId(taskId);
@@ -305,20 +307,16 @@ export default function Checklist() {
     }
   };
 
-  const handlePointerUp = (list) => {
+  const handleGeneralPointerUp = (generalTasksList) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    if (descTimerRef.current) {
-      clearTimeout(descTimerRef.current);
-      descTimerRef.current = null;
-    }
 
     if (isReorderActive && draggedTask && dragOverTaskId) {
-      const targetTask = list.find(t => getTaskId(t) === dragOverTaskId);
+      const targetTask = generalTasksList.find(t => getTaskId(t) === dragOverTaskId);
       if (targetTask) {
-        reorderAndSave(draggedTask, targetTask, list);
+        reorderGeneralTasks(draggedTask, targetTask, generalTasksList);
       }
     }
 
@@ -327,117 +325,18 @@ export default function Checklist() {
     setIsReorderActive(false);
   };
 
+  // Filter & sort System Tasks according to fixed requested order
   const rawSystemTasks = filterNoPorn(tasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title))));
+  const systemTasks = rawSystemTasks.sort((a, b) => {
+    const indexA = SYSTEM_TASK_NAMES.indexOf(a.title);
+    const indexB = SYSTEM_TASK_NAMES.indexOf(b.title);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    return 0;
+  });
+
+  // Filter & sort General Tasks according to custom order
   const rawGeneralTasks = filterNoPorn(tasks.filter(t => !t.is_system && (t.is_system !== undefined || !SYSTEM_TASK_NAMES.includes(t.title))));
-
-  const systemTasks = sortTasksByCustomOrder(rawSystemTasks);
-  const generalTasks = sortTasksByCustomOrder(rawGeneralTasks);
-
-  const renderTaskList = (list, isSystem = false) => {
-    if (loading) {
-      return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tasks...</div>;
-    }
-    if (list.length === 0) {
-      return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>No tasks yet.</div>;
-    }
-    return list.map((task, index) => {
-      const taskId = getTaskId(task);
-      const isReorderingThis = isReorderActive && draggedTask && getTaskId(draggedTask) === taskId;
-      const isDragOver = isReorderActive && dragOverTaskId === taskId;
-
-      return (
-        <div 
-          key={task.id || task.title} 
-          data-task-id={taskId}
-          onMouseDown={(e) => handlePointerDown(task, isSystem, e)}
-          onMouseMove={(e) => handlePointerMove(e, list)}
-          onMouseUp={() => handlePointerUp(list)}
-          onMouseLeave={() => handlePointerUp(list)}
-          onTouchStart={(e) => handlePointerDown(task, isSystem, e)}
-          onTouchMove={(e) => handlePointerMove(e, list)}
-          onTouchEnd={() => handlePointerUp(list)}
-          className={`cl-task-row ${index < list.length - 1 ? 'cl-task-divider' : ''} ${isReorderingThis ? 'reordering' : ''} ${isDragOver ? 'drag-over' : ''}`}
-          style={{ cursor: isSystem ? 'pointer' : 'default', userSelect: 'none', WebkitUserSelect: 'none' }}
-        >
-          {/* Checkbox */}
-          <div
-            className={`cl-checkbox ${task.completed ? 'cl-checkbox-done' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleTask(task);
-            }}
-          >
-            {task.completed && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0c10" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-          </div>
-
-          {/* Text */}
-          <div className="cl-task-text">
-            <div className={`cl-task-title ${task.completed ? 'cl-task-done' : ''}`}>
-              {task.title}
-            </div>
-            {task.is_daily && (
-              <div className="cl-daily-badge">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 2.1l4 4-4 4" />
-                  <path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8M7 21.9l-4-4 4-4" />
-                  <path d="M21 11.8v2a4 4 0 0 1-4 4H4.2" />
-                </svg>
-                Daily
-              </div>
-            )}
-          </div>
-
-          {/* Menu (Only for General Tasks) */}
-          {!isSystem && (
-            <button className="cl-menu-btn" onClick={(e) => {
-              e.stopPropagation();
-              setActiveMenuId(task.id);
-            }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-            </button>
-          )}
-
-          {/* Context Menu Dropdown (Only for General Tasks) */}
-          {!isSystem && activeMenuId === task.id && (
-            <>
-              <div className="cl-menu-overlay" onClick={() => setActiveMenuId(null)} />
-              <div className={`cl-context-menu ${index >= list.length - 3 ? 'menu-up' : ''}`} onClick={(e) => e.stopPropagation()}>
-                <button className="cl-sheet-btn" onClick={() => openEditTaskModal(task)}>
-                  <Pencil size={18} />
-                  <span>Edit Task</span>
-                </button>
-                <button className="cl-sheet-btn" onClick={() => handleToggleDaily(task)}>
-                  {task.is_daily ? (
-                    <>
-                      <PinOff size={18} />
-                      <span>Stop Repeating Daily</span>
-                    </>
-                  ) : (
-                    <>
-                      <Pin size={18} />
-                      <span>Repeat Daily</span>
-                    </>
-                  )}
-                </button>
-                <button className="cl-sheet-btn cl-sheet-danger" onClick={() => handleDeleteTask(task.id)}>
-                  <Trash2 size={18} />
-                  <span>Delete Task</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    });
-  };
+  const generalTasks = sortGeneralTasks(rawGeneralTasks);
 
   return (
     <div className="cl-page animate-fade-in" style={{ position: 'relative' }}>
@@ -467,18 +366,169 @@ export default function Checklist() {
           <span className="cl-panel-title">System Tasks</span>
         </div>
         <div className="cl-task-list">
-          {renderTaskList(systemTasks, true)}
+          {loading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tasks...</div>
+          ) : systemTasks.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>No tasks yet.</div>
+          ) : (
+            systemTasks.map((task, index) => (
+              <div 
+                key={task.id || task.title} 
+                onMouseDown={(e) => handleSystemPointerDown(task, e)}
+                onMouseMove={handleSystemPointerMove}
+                onMouseUp={handleSystemPointerUp}
+                onMouseLeave={handleSystemPointerUp}
+                onTouchStart={(e) => handleSystemPointerDown(task, e)}
+                onTouchMove={handleSystemPointerMove}
+                onTouchEnd={handleSystemPointerUp}
+                className={`cl-task-row ${index < systemTasks.length - 1 ? 'cl-task-divider' : ''}`}
+                style={{ cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                {/* Checkbox */}
+                <div
+                  className={`cl-checkbox ${task.completed ? 'cl-checkbox-done' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTask(task);
+                  }}
+                >
+                  {task.completed && (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0c10" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+
+                {/* Text */}
+                <div className="cl-task-text">
+                  <div className={`cl-task-title ${task.completed ? 'cl-task-done' : ''}`}>
+                    {task.title}
+                  </div>
+                  {task.is_daily && (
+                    <div className="cl-daily-badge">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 2.1l4 4-4 4" />
+                        <path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8M7 21.9l-4-4 4-4" />
+                        <path d="M21 11.8v2a4 4 0 0 1-4 4H4.2" />
+                      </svg>
+                      Daily
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* General Tasks Panel */}
-      <div className="cl-panel">
+      {/* General Tasks Panel (Reordering table) */}
+      <div className="cl-panel cl-general-panel">
         <div className="cl-panel-header">
           <span className="cl-panel-title">General Tasks</span>
           <button className="cl-add-btn" onClick={openNewTaskModal}>+</button>
         </div>
         <div className="cl-task-list">
-          {renderTaskList(generalTasks, false)}
+          {loading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tasks...</div>
+          ) : generalTasks.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>No tasks yet.</div>
+          ) : (
+            generalTasks.map((task, index) => {
+              const taskId = getTaskId(task);
+              const isReorderingThis = isReorderActive && draggedTask && getTaskId(draggedTask) === taskId;
+              const isDragOver = isReorderActive && dragOverTaskId === taskId;
+
+              return (
+                <div 
+                  key={task.id || task.title} 
+                  data-task-id={taskId}
+                  onMouseDown={(e) => handleGeneralPointerDown(task, e)}
+                  onMouseMove={(e) => handleGeneralPointerMove(e, generalTasks)}
+                  onMouseUp={() => handleGeneralPointerUp(generalTasks)}
+                  onMouseLeave={() => handleGeneralPointerUp(generalTasks)}
+                  onTouchStart={(e) => handleGeneralPointerDown(task, e)}
+                  onTouchMove={(e) => handleGeneralPointerMove(e, generalTasks)}
+                  onTouchEnd={() => handleGeneralPointerUp(generalTasks)}
+                  className={`cl-task-row cl-general-task-row ${index < generalTasks.length - 1 ? 'cl-task-divider' : ''} ${isReorderingThis ? 'reordering' : ''} ${isDragOver ? 'drag-over' : ''}`}
+                  style={{ cursor: 'default', userSelect: 'none', WebkitUserSelect: 'none' }}
+                >
+                  {/* Checkbox */}
+                  <div
+                    className={`cl-checkbox ${task.completed ? 'cl-checkbox-done' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTask(task);
+                    }}
+                  >
+                    {task.completed && (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0c10" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Text */}
+                  <div className="cl-task-text">
+                    <div className={`cl-task-title ${task.completed ? 'cl-task-done' : ''}`}>
+                      {task.title}
+                    </div>
+                    {task.is_daily && (
+                      <div className="cl-daily-badge">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 2.1l4 4-4 4" />
+                          <path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8M7 21.9l-4-4 4-4" />
+                          <path d="M21 11.8v2a4 4 0 0 1-4 4H4.2" />
+                        </svg>
+                        Daily
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Menu (Only for General Tasks) */}
+                  <button className="cl-menu-btn" onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(task.id);
+                  }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                      <circle cx="5" cy="12" r="1" />
+                    </svg>
+                  </button>
+
+                  {/* Context Menu Dropdown */}
+                  {activeMenuId === task.id && (
+                    <>
+                      <div className="cl-menu-overlay" onClick={() => setActiveMenuId(null)} />
+                      <div className={`cl-context-menu ${index >= generalTasks.length - 3 ? 'menu-up' : ''}`} onClick={(e) => e.stopPropagation()}>
+                        <button className="cl-sheet-btn" onClick={() => openEditTaskModal(task)}>
+                          <Pencil size={18} />
+                          <span>Edit Task</span>
+                        </button>
+                        <button className="cl-sheet-btn" onClick={() => handleToggleDaily(task)}>
+                          {task.is_daily ? (
+                            <>
+                              <PinOff size={18} />
+                              <span>Stop Repeating Daily</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pin size={18} />
+                              <span>Repeat Daily</span>
+                            </>
+                          )}
+                        </button>
+                        <button className="cl-sheet-btn cl-sheet-danger" onClick={() => handleDeleteTask(task.id)}>
+                          <Trash2 size={18} />
+                          <span>Delete Task</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
