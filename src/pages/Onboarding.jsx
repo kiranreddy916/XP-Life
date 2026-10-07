@@ -292,9 +292,6 @@ export default function Onboarding() {
                         filter: isSelected ? 'drop-shadow(0 0 10px rgba(102, 252, 241, 0.4))' : 'none'
                       }}
                     />
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-secondary)' }}>
-                      {avatar.name}
-                    </span>
                   </div>
                 );
               })}
