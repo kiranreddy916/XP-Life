@@ -59,8 +59,8 @@ CREATE OR REPLACE FUNCTION create_profile(
   p_weight INT
 ) RETURNS VOID AS $$
 BEGIN
-  INSERT INTO profiles (id, username, gender, height, weight, level, xp, total_xp, current_streak, longest_streak)
-  VALUES (p_user_id, p_username, p_gender, p_height, p_weight, 1, 0, 0, 0, 0);
+  INSERT INTO profiles (id, username, gender, height, weight, level, xp, total_xp, current_streak, longest_streak, friend_code)
+  VALUES (p_user_id, p_username, p_gender, p_height, p_weight, 1, 0, 0, 0, 0, generate_unique_friend_code());
 
   -- Insert Default Tasks with is_system = true
   INSERT INTO checklist_tasks (user_id, title, is_daily, completed, is_system)
