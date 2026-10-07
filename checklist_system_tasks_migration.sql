@@ -16,7 +16,7 @@ WITH ranked_tasks AS (
   SELECT id,
          ROW_NUMBER() OVER (PARTITION BY user_id, title ORDER BY created_at ASC) as rn
   FROM checklist_tasks
-  WHERE title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox')
+  WHERE title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Alcohol', 'SM Detox')
 )
 UPDATE checklist_tasks
 SET is_system = true
@@ -71,7 +71,6 @@ BEGIN
     (p_user_id, 'Eat Clean', true, false, true),
     (p_user_id, 'Hydrate', true, false, true),
     (p_user_id, 'Learn', true, false, true),
-    (p_user_id, 'No Porn', true, false, true),
     (p_user_id, 'No Alcohol', true, false, true),
     (p_user_id, 'SM Detox', true, false, true);
 END;

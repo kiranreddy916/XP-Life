@@ -70,7 +70,6 @@ BEGIN
     (p_user_id, 'Eat Clean', true, false),
     (p_user_id, 'Hydrate', true, false),
     (p_user_id, 'Learn', true, false),
-    (p_user_id, 'No Porn', true, false),
     (p_user_id, 'No Alcohol', true, false),
     (p_user_id, 'SM Detox', true, false);
 END;

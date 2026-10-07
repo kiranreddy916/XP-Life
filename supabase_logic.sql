@@ -153,7 +153,6 @@ BEGIN
     (p_user_id, 'Eat Clean', true, false, true),
     (p_user_id, 'Hydrate', true, false, true),
     (p_user_id, 'Learn', true, false, true),
-    (p_user_id, 'No Porn', true, false, true),
     (p_user_id, 'No Alcohol', true, false, true),
     (p_user_id, 'SM Detox', true, false, true);
 END;
@@ -374,7 +373,7 @@ BEGIN
   RETURN QUERY 
   SELECT * FROM checklist_tasks 
   WHERE user_id = v_user_id 
-    AND NOT (is_system = false AND title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Porn', 'No Alcohol', 'SM Detox'))
+    AND NOT (is_system = false AND title IN ('Sleep', 'Sun Light', 'Exercise', 'Eat Clean', 'Hydrate', 'Learn', 'No Alcohol', 'SM Detox'))
     AND (
       is_daily = true 
       OR 
