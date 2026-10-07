@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Trash2, Pin, PinOff, GripVertical } from 'lucide-react';
+import { Pencil, Trash2, Pin, PinOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getCache, setCache } from '../lib/cacheManager';
 import Toast from '../components/Toast';
@@ -18,22 +18,30 @@ const SYSTEM_TASK_DESCRIPTIONS = {
   'SM Detox': 'Limit social media usage or do a complete detox to reclaim your attention span and reduce anxiety.'
 };
 
+const filterNoPorn = (taskList) => {
+  if (!Array.isArray(taskList)) return [];
+  return taskList.filter(t => t && t.title && t.title.toLowerCase().trim() !== 'no porn');
+};
+
 export default function Checklist() {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState(() => getCache('checklist_tasks') || []);
+  const [tasks, setTasks] = useState(() => filterNoPorn(getCache('checklist_tasks') || []));
   const [loading, setLoading] = useState(() => !getCache('checklist_tasks'));
   const [showModal, setShowModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [toastInfo, setToastInfo] = useState(null);
-  const [longPressTimer, setLongPressTimer] = useState(null);
   const [selectedDescriptionTask, setSelectedDescriptionTask] = useState(null);
 
-  // Drag & drop state
+  // Reorder & long press state
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null);
-  const [activeTouchList, setActiveTouchList] = useState(null);
+  const [isReorderActive, setIsReorderActive] = useState(false);
+
+  const longPressTimerRef = useRef(null);
+  const descTimerRef = useRef(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
 
   // Custom order persistence
   const [customOrder, setCustomOrder] = useState(() => {
@@ -105,8 +113,16 @@ export default function Checklist() {
     try {
       const { data, error } = await supabase.rpc('get_checklist_tasks', { p_client_date: getLocalDateStr() });
       if (error) throw error;
-      setTasks(data || []);
-      setCache('checklist_tasks', data || []);
+      
+      const cleanData = filterNoPorn(data || []);
+      setTasks(cleanData);
+      setCache('checklist_tasks', cleanData);
+
+      // Permanently remove any existing 'No Porn' task row in DB if present
+      const noPornInDb = (data || []).find(t => t.title && t.title.toLowerCase().trim() === 'no porn');
+      if (noPornInDb) {
+        supabase.from('checklist_tasks').delete().eq('id', noPornInDb.id).then();
+      }
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -121,10 +137,8 @@ export default function Checklist() {
     // Optimistic UI update using functional state
     setTasks(prev => {
       const newTasks = prev.map(t => t.id === task.id ? { ...t, completed: newCompletedState } : t);
-      
       const sysTasks = newTasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title)));
       allSystemCompletedOptimistic = newCompletedState && sysTasks.length > 0 && sysTasks.every(t => t.completed);
-      
       return newTasks;
     });
 
@@ -147,7 +161,7 @@ export default function Checklist() {
       
       if (error) {
         console.error('Error toggling task:', error);
-        if (!allSystemCompletedOptimistic) fetchTasks(); // Revert on error
+        if (!allSystemCompletedOptimistic) fetchTasks();
       } else if (!allSystemCompletedOptimistic && data?.xp_awarded > 0) {
         navigate('/home', {
           state: {
@@ -206,7 +220,7 @@ export default function Checklist() {
 
   const handleDeleteTask = async (id) => {
     setActiveMenuId(null);
-    setTasks(prev => prev.filter(t => t.id !== id)); // Optimistic remove
+    setTasks(prev => prev.filter(t => t.id !== id));
     
     await supabase
       .from('checklist_tasks')
@@ -227,73 +241,60 @@ export default function Checklist() {
     setShowModal(true);
   };
 
-  const handlePressStart = (task, isSystem) => {
-    if (!isSystem) return;
+  // 5-Second Long Press Pointer Handlers for Reordering
+  const handlePointerDown = (task, isSystem, e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startPosRef.current = { x: clientX, y: clientY };
 
-    if (longPressTimer) clearTimeout(longPressTimer);
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    if (descTimerRef.current) clearTimeout(descTimerRef.current);
 
-    const timer = setTimeout(() => {
-      setSelectedDescriptionTask(task);
+    // Short long-press (600ms) for System Task description modal
+    if (isSystem) {
+      descTimerRef.current = setTimeout(() => {
+        if (!isReorderActive) {
+          setSelectedDescriptionTask(task);
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      }, 600);
+    }
+
+    // 5-Second long-press (5000ms) to trigger reorder mode
+    longPressTimerRef.current = setTimeout(() => {
+      if (descTimerRef.current) clearTimeout(descTimerRef.current);
+      setSelectedDescriptionTask(null);
+
+      setDraggedTask(task);
+      setIsReorderActive(true);
       if (navigator.vibrate) {
-        navigator.vibrate(50);
+        navigator.vibrate([100, 50, 100]); // double buzz on 5s activation
       }
-    }, 600); // 600ms long press
-
-    setLongPressTimer(timer);
+    }, 5000);
   };
 
-  const handlePressEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
+  const handlePointerMove = (e, list) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    if (!isReorderActive) {
+      // Differentiate tap/scroll from hold: if pointer moved > 10px before 5s, cancel timers
+      const dist = Math.hypot(clientX - startPosRef.current.x, clientY - startPosRef.current.y);
+      if (dist > 10) {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        if (descTimerRef.current) {
+          clearTimeout(descTimerRef.current);
+          descTimerRef.current = null;
+        }
+      }
+      return;
     }
-  };
 
-  // Drag & drop handlers
-  const handleDragStart = (e, task) => {
-    setDraggedTask(task);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', getTaskId(task));
-  };
-
-  const handleDragOver = (e, task) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (getTaskId(task) !== dragOverTaskId) {
-      setDragOverTaskId(getTaskId(task));
-    }
-  };
-
-  const handleDragLeave = (e, task) => {
-    if (dragOverTaskId === getTaskId(task)) {
-      setDragOverTaskId(null);
-    }
-  };
-
-  const handleDrop = (e, targetTask, list) => {
-    e.preventDefault();
-    if (draggedTask) {
-      reorderAndSave(draggedTask, targetTask, list);
-    }
-    setDraggedTask(null);
-    setDragOverTaskId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedTask(null);
-    setDragOverTaskId(null);
-  };
-
-  // Touch drag handlers for mobile support
-  const handleTouchStart = (e, task, list) => {
-    setDraggedTask(task);
-    setActiveTouchList(list);
-  };
-
-  const handleTouchMove = (e) => {
-    if (!draggedTask) return;
-    const touch = e.touches[0];
-    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    // Reorder mode is active! Locate target row under pointer
+    const elem = document.elementFromPoint(clientX, clientY);
     if (!elem) return;
     const rowElem = elem.closest('.cl-task-row');
     if (rowElem) {
@@ -304,20 +305,30 @@ export default function Checklist() {
     }
   };
 
-  const handleTouchEnd = (e, list) => {
-    if (draggedTask && dragOverTaskId) {
+  const handlePointerUp = (list) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (descTimerRef.current) {
+      clearTimeout(descTimerRef.current);
+      descTimerRef.current = null;
+    }
+
+    if (isReorderActive && draggedTask && dragOverTaskId) {
       const targetTask = list.find(t => getTaskId(t) === dragOverTaskId);
       if (targetTask) {
         reorderAndSave(draggedTask, targetTask, list);
       }
     }
+
     setDraggedTask(null);
     setDragOverTaskId(null);
-    setActiveTouchList(null);
+    setIsReorderActive(false);
   };
 
-  const rawSystemTasks = tasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title)));
-  const rawGeneralTasks = tasks.filter(t => !t.is_system && (t.is_system !== undefined || !SYSTEM_TASK_NAMES.includes(t.title)));
+  const rawSystemTasks = filterNoPorn(tasks.filter(t => t.is_system || (t.is_system === undefined && SYSTEM_TASK_NAMES.includes(t.title))));
+  const rawGeneralTasks = filterNoPorn(tasks.filter(t => !t.is_system && (t.is_system !== undefined || !SYSTEM_TASK_NAMES.includes(t.title))));
 
   const systemTasks = sortTasksByCustomOrder(rawSystemTasks);
   const generalTasks = sortTasksByCustomOrder(rawGeneralTasks);
@@ -331,48 +342,23 @@ export default function Checklist() {
     }
     return list.map((task, index) => {
       const taskId = getTaskId(task);
-      const isDragging = draggedTask && getTaskId(draggedTask) === taskId;
-      const isDragOver = dragOverTaskId === taskId;
+      const isReorderingThis = isReorderActive && draggedTask && getTaskId(draggedTask) === taskId;
+      const isDragOver = isReorderActive && dragOverTaskId === taskId;
 
       return (
         <div 
           key={task.id || task.title} 
           data-task-id={taskId}
-          draggable
-          onDragStart={(e) => handleDragStart(e, task)}
-          onDragOver={(e) => handleDragOver(e, task)}
-          onDragLeave={(e) => handleDragLeave(e, task)}
-          onDrop={(e) => handleDrop(e, task, list)}
-          onDragEnd={handleDragEnd}
-          className={`cl-task-row ${index < list.length - 1 ? 'cl-task-divider' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-          onMouseDown={() => handlePressStart(task, isSystem)}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onTouchStart={() => handlePressStart(task, isSystem)}
-          onTouchEnd={handlePressEnd}
-          onTouchMove={handlePressEnd}
+          onMouseDown={(e) => handlePointerDown(task, isSystem, e)}
+          onMouseMove={(e) => handlePointerMove(e, list)}
+          onMouseUp={() => handlePointerUp(list)}
+          onMouseLeave={() => handlePointerUp(list)}
+          onTouchStart={(e) => handlePointerDown(task, isSystem, e)}
+          onTouchMove={(e) => handlePointerMove(e, list)}
+          onTouchEnd={() => handlePointerUp(list)}
+          className={`cl-task-row ${index < list.length - 1 ? 'cl-task-divider' : ''} ${isReorderingThis ? 'reordering' : ''} ${isDragOver ? 'drag-over' : ''}`}
           style={{ cursor: isSystem ? 'pointer' : 'default', userSelect: 'none', WebkitUserSelect: 'none' }}
         >
-          {/* Drag Handle */}
-          <div 
-            className="cl-drag-handle"
-            title="Drag to reorder"
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              handleTouchStart(e, task, list);
-            }}
-            onTouchMove={(e) => {
-              e.stopPropagation();
-              handleTouchMove(e);
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-              handleTouchEnd(e, list);
-            }}
-          >
-            <GripVertical size={18} />
-          </div>
-
           {/* Checkbox */}
           <div
             className={`cl-checkbox ${task.completed ? 'cl-checkbox-done' : ''}`}
